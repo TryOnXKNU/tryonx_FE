@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,40 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
+import axios from 'axios';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function LoginScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      const res = await axios.post('http://localhost:8080/api/v1/auth/login', {
+        email,
+        password,
+      });
+
+      const { token } = res.data;
+      await AsyncStorage.setItem('authToken', token);
+      // 토큰 저장
+
+      Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
+      navigation.navigate('Main');
+    } catch (error) {
+      Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -21,23 +49,31 @@ function LoginScreen() {
         resizeMode="contain"
       />
       <View style={styles.inputContainer}>
-        <TextInput placeholder="ID" style={styles.input} />
+        <TextInput
+          placeholder="ID"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
         <TextInput
           placeholder="PASSWORD"
           secureTextEntry
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
       </View>
-      {/* 로그인 버튼 → Home 이동 */}
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={() => navigation.navigate('Main')}
-      >
+
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Text style={styles.loginButtonText}>로그인</Text>
       </TouchableOpacity>
+
       <TouchableOpacity style={styles.nonLoginButton}>
         <Text style={styles.nonLoginButtonText}>비회원 주문 조회</Text>
       </TouchableOpacity>
+
       <TouchableOpacity style={styles.kakaoButton}>
         <Text style={styles.kakaoButtonText}>카카오 로그인</Text>
       </TouchableOpacity>
