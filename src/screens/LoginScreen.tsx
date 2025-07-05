@@ -75,7 +75,7 @@ function LoginScreen() {
       // 서버로 전달할 데이터 구성
       const payload = {
         accessToken: token.accessToken,
-        kakaoProfile: profile,
+        //kakaoProfile: profile,
       };
 
       const res = await axios.post(
