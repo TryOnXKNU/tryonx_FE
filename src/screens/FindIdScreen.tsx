@@ -23,34 +23,96 @@ export default function FindIdScreen() {
   const [codeSent, setCodeSent] = useState(false);
   const [verified, setVerified] = useState(false);
 
-  const sendCode = () => {
+  // 예시 중 하나 (sendCode)
+  const sendCode = async () => {
     if (!phone) {
       Alert.alert('휴대폰 번호를 입력하세요.');
       return;
     }
-    Alert.alert('인증번호가 발송되었습니다.');
-    setCodeSent(true);
-  };
 
-  const verifyCode = () => {
-    if (code === '5678') {
-      setVerified(true);
-      Alert.alert('인증 완료');
-    } else {
-      Alert.alert('인증번호가 올바르지 않습니다.');
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/v1/auth/sms/send?phoneNumber=${phone}`,
+        { method: 'POST' },
+      );
+
+      if (response.ok) {
+        Alert.alert('인증번호가 발송되었습니다.');
+        setCodeSent(true);
+      } else {
+        Alert.alert('인증 요청 실패');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('오류 발생', error.message);
+      } else {
+        Alert.alert('오류 발생', '알 수 없는 오류');
+      }
     }
   };
 
-  const findId = () => {
+  const verifyCode = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/v1/auth/sms/verify?phoneNumber=${phone}&code=${code}`,
+        { method: 'POST' },
+      );
+
+      if (response.ok) {
+        Alert.alert('인증 완료');
+        setVerified(true);
+      } else {
+        Alert.alert('인증 실패');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('오류 발생', error.message);
+      } else {
+        Alert.alert('오류 발생', '알 수 없는 오류');
+      }
+    }
+  };
+
+  const findId = async () => {
     if (!verified) {
       Alert.alert('휴대폰 인증이 필요합니다.');
       return;
     }
-    Alert.alert('회원님의 아이디는 example_user 입니다.');
+
+    try {
+      const response = await fetch(
+        'http://localhost:8080/api/v1/auth/find-id',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phoneNumber: phone }),
+        },
+      );
+
+      if (response.ok) {
+        const userId = await response.text();
+        Alert.alert('아이디 확인', `회원님의 아이디는 ${userId} 입니다.`, [
+          {
+            text: '확인',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]);
+      } else {
+        Alert.alert('아이디 찾기 실패');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('오류 발생', error.message);
+      } else {
+        Alert.alert('오류 발생', '알 수 없는 오류');
+      }
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={28} color="#000" />
@@ -119,6 +181,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
     justifyContent: 'space-between',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 18,

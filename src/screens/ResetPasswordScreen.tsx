@@ -10,6 +10,7 @@ import {
   Platform,
   SafeAreaView,
 } from 'react-native';
+import axios from 'axios';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -25,25 +26,46 @@ export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const sendCode = () => {
+  const sendCode = async () => {
     if (!email) {
       Alert.alert('이메일을 입력하세요.');
       return;
     }
-    Alert.alert('비밀번호 재설정 이메일을 발송했습니다.');
-    setCodeSent(true);
-  };
 
-  const verifyCode = () => {
-    if (code === '1234') {
-      setVerified(true);
-      Alert.alert('인증 완료');
-    } else {
-      Alert.alert('인증번호가 올바르지 않습니다.');
+    try {
+      await axios.post('/api/v1/auth/email/send', null, {
+        params: { email },
+      });
+      Alert.alert('인증 코드가 이메일로 전송되었습니다.');
+      setCodeSent(true);
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        '인증 코드 전송 실패',
+        '서버와의 통신 중 문제가 발생했습니다.',
+      );
     }
   };
 
-  const resetPassword = () => {
+  const verifyCode = async () => {
+    if (!code) {
+      Alert.alert('인증번호를 입력하세요.');
+      return;
+    }
+
+    try {
+      await axios.post('/api/v1/auth/email/verify', null, {
+        params: { email, code },
+      });
+      Alert.alert('이메일 인증이 완료되었습니다.');
+      setVerified(true);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('인증 실패', '인증번호가 올바르지 않습니다.');
+    }
+  };
+
+  const resetPassword = async () => {
     if (newPassword.length < 6) {
       Alert.alert('비밀번호는 최소 6자 이상이어야 합니다.');
       return;
@@ -52,9 +74,19 @@ export default function ResetPasswordScreen() {
       Alert.alert('비밀번호 확인이 일치하지 않습니다.');
       return;
     }
-    // 실제 비밀번호 변경 로직 필요
-    Alert.alert('비밀번호가 성공적으로 재설정되었습니다.');
-    navigation.goBack();
+
+    try {
+      await axios.post('/api/v1/auth/reset-password', {
+        email,
+        newPassword,
+      });
+
+      Alert.alert('비밀번호가 성공적으로 재설정되었습니다.');
+      navigation.goBack();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('재설정 실패', '비밀번호 재설정 중 문제가 발생했습니다.');
+    }
   };
 
   return (
@@ -160,13 +192,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   spacer: { width: 28 },
-
   container: {
     flex: 1,
     padding: 24,
     backgroundColor: '#fff',
   },
-
   label: {
     fontWeight: 'bold',
     marginBottom: 8,
