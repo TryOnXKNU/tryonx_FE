@@ -62,6 +62,9 @@ export default function SignUpScreen() {
     return /^01[016789][0-9]{7,8}$/.test(inputPhone);
   };
 
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false);
+
+  // 이메일 인증코드 전송
   const sendEmailCode = async () => {
     if (!userId) return Alert.alert('아이디(이메일)를 입력해주세요.');
     try {
@@ -74,6 +77,7 @@ export default function SignUpScreen() {
     }
   };
 
+  // 이메일 인증코드 확인
   const verifyEmailCode = async () => {
     if (!userId || !userIdCode)
       return Alert.alert('아이디와 인증번호를 입력해주세요.');
@@ -88,6 +92,7 @@ export default function SignUpScreen() {
     }
   };
 
+  // sms 인증코드 전송
   const sendSmsCode = async () => {
     if (!phone) return Alert.alert('휴대폰 번호를 입력해주세요.');
     try {
@@ -100,6 +105,7 @@ export default function SignUpScreen() {
     }
   };
 
+  // sms 인증코드 확인
   const verifySmsCode = async () => {
     if (!phone || !phoneCode)
       return Alert.alert('휴대폰 번호와 인증번호를 입력해주세요.');
@@ -114,6 +120,36 @@ export default function SignUpScreen() {
     }
   };
 
+  const checkNicknameDuplicate = async () => {
+    if (!nickname.trim()) {
+      Alert.alert('닉네임을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const res = await axios.get('/api/v1/auth/duplicate-nickname', {
+        params: { nickname },
+      });
+
+      if (res.data === false) {
+        Alert.alert('이미 사용 중인 닉네임입니다.');
+        setIsNicknameChecked(false);
+      } else {
+        Alert.alert('사용 가능한 닉네임입니다.');
+        setIsNicknameChecked(true);
+      }
+    } catch (error) {
+      Alert.alert('닉네임 중복 확인 실패', '잠시 후 다시 시도해주세요.');
+      setIsNicknameChecked(false);
+    }
+  };
+
+  const handleNicknameChange = (text: string) => {
+    setNickname(text);
+    setIsNicknameChecked(false); // 닉네임이 변경되면 다시 중복 확인 필요
+  };
+
+  //회원가입 완료 버튼
   const onSubmit = async () => {
     if (
       !name ||
@@ -273,17 +309,6 @@ export default function SignUpScreen() {
             }}
           />
 
-          {/* <TouchableOpacity
-            style={[
-              styles.verifyButton,
-              phoneVerified && styles.disabledButton,
-            ]}
-            disabled={phoneVerified}
-            onPress={sendSmsCode}
-          >
-            <Text style={styles.verifyText}>인증받기</Text>
-          </TouchableOpacity> */}
-
           <TouchableOpacity
             style={[
               styles.verifyButton,
@@ -365,13 +390,20 @@ export default function SignUpScreen() {
             placeholder="닉네임"
             style={[styles.input, styles.flex1]}
             value={nickname}
-            onChangeText={setNickname}
+            onChangeText={handleNicknameChange}
           />
+
           <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={() => Alert.alert('닉네임 중복확인')}
+            onPress={checkNicknameDuplicate}
+            disabled={isNicknameChecked}
+            style={[
+              styles.verifyButton,
+              isNicknameChecked && styles.disabledButton,
+            ]}
           >
-            <Text style={styles.verifyText}>중복확인</Text>
+            <Text style={styles.verifyText}>
+              {isNicknameChecked ? '확인 완료' : '중복 확인'}
+            </Text>
           </TouchableOpacity>
         </View>
 
