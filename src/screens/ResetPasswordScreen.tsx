@@ -90,7 +90,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={28} color="#000" />
@@ -176,6 +176,10 @@ export default function ResetPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -203,7 +207,7 @@ const styles = StyleSheet.create({
   },
   authRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   input: {
@@ -214,6 +218,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     marginBottom: 12,
+    height: 48,
   },
   flex3: {
     flex: 3,
@@ -226,6 +231,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 100,
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
   },
   disabledButton: {
     backgroundColor: '#888',
