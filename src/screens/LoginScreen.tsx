@@ -44,7 +44,7 @@ function LoginScreen() {
 
   const handleKakaoLogin = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/login');
+      const res = await axios.get('http://localhost:8080/kakao/login');
 
       // 서버에서 리디렉션 또는 카카오 OAuth URL 반환하는 방식인지 확인 필요
       // 예: res.data.url 또는 res.request.responseURL 로 받아옴
