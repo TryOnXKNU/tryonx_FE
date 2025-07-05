@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   View,
   Text,
@@ -7,18 +8,53 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
 import axios from 'axios';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { Linking } from 'react-native';
 import { login, getProfile } from '@react-native-seoul/kakao-login';
 
 function LoginScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const setToken = useAuthStore(state => state.setToken);
+
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+      const token = getQueryParamFromUrl(url, 'token'); // code -> token으로 변경
+
+      if (token) {
+        try {
+          setToken(token); // Zustand 스토어에 저장
+          Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
+          navigation.navigate('Main');
+        } catch (error) {
+          console.error('토큰 처리 실패:', error);
+          Alert.alert('로그인 실패', '토큰 처리 중 오류 발생');
+        }
+      }
+    };
+
+    Linking.getInitialURL().then(url => {
+      if (url) handleDeepLink({ url });
+    });
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation, setToken]);
+
+  const getQueryParamFromUrl = (url: string, key: string): string | null => {
+    const match = url.match(new RegExp('[?&]' + key + '=([^&]+)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -34,6 +70,7 @@ function LoginScreen() {
 
       const { token } = res.data;
       await AsyncStorage.setItem('authToken', token);
+      setToken(token);
       // 토큰 저장
 
       Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
@@ -65,6 +102,7 @@ function LoginScreen() {
       );
 
       await AsyncStorage.setItem('authToken', res.data.token);
+      setToken(res.data.token);
 
       Alert.alert('로그인 성공', `${profile.nickname}님 환영합니다!`);
       navigation.navigate('Main');

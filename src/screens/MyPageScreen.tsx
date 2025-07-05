@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,30 +11,75 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+import { useAuthStore } from '../store/useAuthStore'; // zustand 상태
+import axios from 'axios';
+import { RootStackParamList } from '../navigation/types';
+
+type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
 export default function MyPageScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<MyPageNavigationProp>();
+
+  const { token, logout } = useAuthStore();
+  const [userName, setUserName] = useState('');
+  const [height, setHeight] = useState(175);
+  const [weight, setWeight] = useState(68);
 
   const handleEditProfile = () => {
     Alert.alert('내정보 수정으로 이동');
   };
 
   const handleLogout = () => {
+    logout();
     Alert.alert('로그아웃 되었습니다.');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
   };
 
   const handleWithdraw = () => {
     Alert.alert('회원탈퇴 처리되었습니다.');
   };
 
-  // 실제 적립금, 주문내역, 리뷰 수치 (예시)
+  useEffect(() => {
+    if (!token) {
+      // 토큰 없으면 로그인 화면으로 강제 이동
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+      return;
+    }
+
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get(
+          'http://localhost:8080/api/v1/users/list',
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (response.status === 200 && Array.isArray(response.data)) {
+          const me = response.data[0];
+          setUserName(me.name);
+          setHeight(me.height);
+          setWeight(me.weight);
+        }
+      } catch (error) {
+        console.error('유저 정보 가져오기 실패:', error);
+      }
+    };
+
+    fetchUserInfo();
+  }, [token, navigation]);
+
   const points = 1500;
   const orders = 2;
   const reviews = 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={28} color="#000" />
@@ -51,15 +96,16 @@ export default function MyPageScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Profile Section */}
         <View style={styles.profileCard}>
           <Image
             source={{ uri: 'https://picsum.photos/50' }}
             style={styles.avatar}
           />
           <View style={styles.flex1}>
-            <Text style={styles.nickname}>홍길동</Text>
-            <Text style={styles.info}>175cm / 68kg</Text>
+            <Text style={styles.nickname}>{userName || '로딩 중...'}</Text>
+            <Text style={styles.info}>
+              {height}cm / {weight}kg
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.editButton}
@@ -69,7 +115,6 @@ export default function MyPageScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Quick Access Buttons */}
         <View style={styles.quickRow}>
           <QuickButton label="적립금" icon="wallet-outline" count={points} />
           <QuickButton label="주문내역" icon="cube-outline" count={orders} />
@@ -80,7 +125,6 @@ export default function MyPageScreen() {
           />
         </View>
 
-        {/* List Menu */}
         <View style={styles.menuList}>
           <MenuItem label="최근 본 상품" />
           <MenuItem label="주문내역" />
@@ -88,7 +132,6 @@ export default function MyPageScreen() {
           <MenuItem label="리뷰내역" />
         </View>
 
-        {/* Bottom Buttons 한 줄로 */}
         <View style={styles.bottomActionsRow}>
           <TouchableOpacity onPress={handleLogout}>
             <Text style={styles.logoutText}>로그아웃</Text>
@@ -102,7 +145,6 @@ export default function MyPageScreen() {
   );
 }
 
-// QuickButton Component, count 숫자 표시 추가
 function QuickButton({
   label,
   icon,
@@ -121,7 +163,6 @@ function QuickButton({
   );
 }
 
-// MenuItem Component
 function MenuItem({ label }: { label: string }) {
   return (
     <TouchableOpacity style={styles.menuItem}>
@@ -133,7 +174,6 @@ function MenuItem({ label }: { label: string }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,12 +193,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   container: {
     padding: 16,
     backgroundColor: '#fff',
   },
-
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,7 +229,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-
   quickRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -213,7 +250,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 4,
   },
-
   menuList: {
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -230,7 +266,6 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
   },
-
   bottomActionsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
