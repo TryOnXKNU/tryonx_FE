@@ -12,7 +12,8 @@ import axios from 'axios';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Linking } from 'react-native';
+// import { Linking } from 'react-native';
+import { login, getProfile } from '@react-native-seoul/kakao-login';
 
 function LoginScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -42,19 +43,50 @@ function LoginScreen() {
     }
   };
 
+  // const handleKakaoLogin = async () => {
+  //   try {
+  //     const res = await axios.get('http://localhost:8080/kakao/login');
+
+  //     // 서버에서 리디렉션 또는 카카오 OAuth URL 반환하는 방식인지 확인 필요
+  //     // 예: res.data.url 또는 res.request.responseURL 로 받아옴
+  //     const redirectUrl = res.data?.redirectUrl || res.request?.responseURL;
+
+  //     if (redirectUrl) {
+  //       Linking.openURL(redirectUrl);
+  //     } else {
+  //       Alert.alert('카카오 로그인 실패', '로그인 URL을 받아오지 못했습니다.');
+  //     }
+  //   } catch (error) {
+  //     console.error('카카오 로그인 실패:', error);
+  //     Alert.alert('카카오 로그인 실패', '오류가 발생했습니다.');
+  //   }
+  // };
+
   const handleKakaoLogin = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/kakao/login');
-
-      // 서버에서 리디렉션 또는 카카오 OAuth URL 반환하는 방식인지 확인 필요
-      // 예: res.data.url 또는 res.request.responseURL 로 받아옴
-      const redirectUrl = res.data?.redirectUrl || res.request?.responseURL;
-
-      if (redirectUrl) {
-        Linking.openURL(redirectUrl);
-      } else {
-        Alert.alert('카카오 로그인 실패', '로그인 URL을 받아오지 못했습니다.');
+      const token = await login(); // Kakao SDK 로그인
+      if (!token) {
+        Alert.alert('카카오 로그인 실패', '로그인에 실패했습니다.');
+        return;
       }
+
+      const profile = await getProfile(); // 사용자 프로필 정보 가져오기
+
+      // 서버로 전달할 데이터 구성
+      const payload = {
+        accessToken: token.accessToken,
+        kakaoProfile: profile,
+      };
+
+      const res = await axios.post(
+        'http://localhost:8080/api/v1/auth/kakao',
+        payload,
+      );
+
+      await AsyncStorage.setItem('authToken', res.data.token);
+
+      Alert.alert('로그인 성공', `${profile.nickname}님 환영합니다!`);
+      navigation.navigate('Main');
     } catch (error) {
       console.error('카카오 로그인 실패:', error);
       Alert.alert('카카오 로그인 실패', '오류가 발생했습니다.');
