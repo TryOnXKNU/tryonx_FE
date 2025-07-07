@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
   Image,
@@ -11,7 +10,9 @@ import {
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import Header from '../components/Header';
+
+// type NavigationProp = StackNavigationProp<RootStackParamList, 'Fitting'>;
 
 const categories = ['All', 'Outerwear', 'Tops', 'Bottoms', 'Dresses', 'Acc'];
 const bodyTypes = ['Wave', 'Straight', 'Natural'];
@@ -21,7 +22,7 @@ const sampleProducts = Array.from({ length: 12 }, (_, index) => ({
 }));
 
 export default function FittingScreen() {
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
   const [selectedGender, setSelectedGender] = useState<'male' | 'female'>(
     'female',
   );
@@ -30,22 +31,9 @@ export default function FittingScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI 피팅</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="notifications-outline" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.marginLeft16}>
-            <Icon name="cart-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header title="AI피팅" showRightIcons={true} hideBackButton={true} />
 
       {/* 고정된 상단 콘텐츠 */}
       <View style={styles.contentContainer}>
@@ -162,7 +150,7 @@ export default function FittingScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

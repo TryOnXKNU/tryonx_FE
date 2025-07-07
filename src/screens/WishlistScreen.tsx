@@ -6,11 +6,10 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-
+import Header from '../components/Header';
 const sampleData = [
   {
     id: '1',
@@ -56,22 +55,9 @@ export default function WishlistScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>좋아요</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="notifications-outline" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.marginLeft16}>
-            <Icon name="cart-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header title="좋아요" showRightIcons={true} hideBackButton={true} />
 
       {wishlistData.length === 0 ? (
         <View style={styles.emptyWrapper}>
@@ -98,7 +84,7 @@ export default function WishlistScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

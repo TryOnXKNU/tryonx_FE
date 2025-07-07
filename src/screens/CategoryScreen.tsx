@@ -7,12 +7,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+import Header from '../components/Header';
 
 export default function CategoryScreen() {
-  const navigation = useNavigation();
-
   const categories = [
     'NewArrival',
     'all',
@@ -31,22 +29,9 @@ export default function CategoryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>카테고리</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="notifications-outline" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.marginLeft16}>
-            <Icon name="cart-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header title="카테고리" showRightIcons={true} hideBackButton={true} />
 
       {/* 카테고리 리스트 */}
       <ScrollView
@@ -64,12 +49,15 @@ export default function CategoryScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   header: {
     flexDirection: 'row',
     paddingHorizontal: 16,

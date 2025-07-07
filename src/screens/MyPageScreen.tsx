@@ -7,8 +7,8 @@ import {
   ScrollView,
   Image,
   Alert,
-  SafeAreaView,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,18 +17,22 @@ import { useAuthStore } from '../store/useAuthStore'; // zustand 상태
 import axios from 'axios';
 import { RootStackParamList } from '../navigation/types';
 
+import Header from '../components/Header';
+
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
 export default function MyPageScreen() {
   const navigation = useNavigation<MyPageNavigationProp>();
 
+  const isFocused = useIsFocused(); // 포커스 상태 감지
+
   const { token, logout } = useAuthStore();
   const [userName, setUserName] = useState('');
-  const [height, setHeight] = useState(175);
-  const [weight, setWeight] = useState(68);
+  const [height, setHeight] = useState();
+  const [weight, setWeight] = useState();
 
   const handleEditProfile = () => {
-    Alert.alert('내정보 수정으로 이동');
+    navigation.navigate('EditProfile');
   };
 
   const handleLogout = () => {
@@ -54,15 +58,16 @@ export default function MyPageScreen() {
       return;
     }
 
+    if (!isFocused) return;
+
     const fetchUserInfo = async () => {
       try {
-        const response = await axios.get(
-          'http://localhost:8080/api/v1/users/list',
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (response.status === 200 && Array.isArray(response.data)) {
-          const me = response.data[0];
-          setUserName(me.name);
+        const response = await axios.get('http://localhost:8080/api/v1/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status === 200) {
+          const me = response.data;
+          setUserName(me.nickname);
           setHeight(me.height);
           setWeight(me.weight);
         }
@@ -72,28 +77,15 @@ export default function MyPageScreen() {
     };
 
     fetchUserInfo();
-  }, [token, navigation]);
+  }, [token, navigation, isFocused]);
 
   const points = 1500;
   const orders = 2;
   const reviews = 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>마이페이지</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="notifications-outline" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.marginLeft16}>
-            <Icon name="cart-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.safeArea}>
+      <Header title="마이페이지" showRightIcons={true} hideBackButton={true} />
 
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileCard}>
@@ -141,7 +133,7 @@ export default function MyPageScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
