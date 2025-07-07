@@ -8,4 +8,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   MyPage: undefined;
   Main: undefined;
+  Search: undefined;
+  SearchOutput: { keyword: string };
+  EditProfile: undefined;
 };

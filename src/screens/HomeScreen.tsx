@@ -6,28 +6,31 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/types';
 import Header from '../components/Header';
 
+type NavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+
 function HomeScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
+  const handleSearchPress = () => {
+    navigation.navigate('Search');
+  };
+
   return (
     <View style={styles.container}>
-      {/* 상단 헤더 */}
-      <Header />
+      <Header isMain={true} showRightIcons={true} hideBackButton={true} />
 
-      {/* 본문 스크롤 영역 */}
       <ScrollView contentContainerStyle={styles.content}>
-        {/* 검색창 대체 */}
-        <View style={styles.searchBox}>
+        {/* 검색창 */}
+        <TouchableOpacity style={styles.searchBox} onPress={handleSearchPress}>
           <Text style={styles.searchText}>검색어를 입력하세요</Text>
-        </View>
+        </TouchableOpacity>
 
-        {/* 정사각형 배너 */}
-        {/* <Image
-          source={require('../assets/images/banner.png')}
-          style={styles.banner}
-        /> */}
-
-        {/* 인기 스타일 */}
+        {/* 인기 많은 스타일 */}
         <Text style={styles.sectionTitle}>인기 많은 스타일</Text>
         <View style={styles.itemRow}>
           <ItemBox name="아이템 1" />
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  itemBoxText: { fontSize: 14 }, // 여기도 분리
+  itemBoxText: { fontSize: 14 },
   styleTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
