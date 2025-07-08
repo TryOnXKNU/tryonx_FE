@@ -11,6 +11,8 @@ import MainTabNavigator from './MainTabNavigator';
 import SearchScreen from '../screens/SearchScreen';
 import SearchOutputScreen from '../screens/SearchOutputScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import EditProfileImageScreen from '../screens/EditProfileImageScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
 
@@ -29,6 +31,11 @@ const AppNavigator = () => {
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="SearchOutput" component={SearchOutputScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen
+        name="EditProfileImage"
+        component={EditProfileImageScreen}
+      />
+      <Stack.Screen name="Notification" component={NotificationScreen} />
     </Stack.Navigator>
   );
 };

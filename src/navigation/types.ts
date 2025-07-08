@@ -11,4 +11,6 @@ export type RootStackParamList = {
   Search: undefined;
   SearchOutput: { keyword: string };
   EditProfile: undefined;
+  EditProfileImage: undefined;
+  Notification: undefined;
 };
