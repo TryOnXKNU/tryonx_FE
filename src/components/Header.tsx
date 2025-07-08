@@ -4,6 +4,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
+
 interface HeaderProps {
   isMain?: boolean; // 메인 페이지 여부
   title?: string; // 페이지 제목
@@ -17,7 +20,8 @@ export default function Header({
   showRightIcons = true,
   hideBackButton = false, // 기본 false
 }: HeaderProps) {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView
@@ -46,9 +50,12 @@ export default function Header({
 
         {showRightIcons && (
           <View style={styles.headerIcons}>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notification')}
+            >
               <Icon name="notifications-outline" size={24} color="black" />
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.iconSpacing}>
               <Icon name="cart-outline" size={24} color="black" />
             </TouchableOpacity>

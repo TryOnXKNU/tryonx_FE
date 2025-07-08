@@ -35,6 +35,10 @@ export default function MyPageScreen() {
     navigation.navigate('EditProfile');
   };
 
+  const handleEditProfileImage = () => {
+    navigation.navigate('EditProfileImage');
+  };
+
   const handleLogout = () => {
     logout();
     Alert.alert('로그아웃 되었습니다.');
@@ -89,10 +93,13 @@ export default function MyPageScreen() {
 
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileCard}>
-          <Image
-            source={{ uri: 'https://picsum.photos/50' }}
-            style={styles.avatar}
-          />
+          <TouchableOpacity onPress={handleEditProfileImage}>
+            <Image
+              source={{ uri: 'https://picsum.photos/50' }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
+
           <View style={styles.flex1}>
             <Text style={styles.nickname}>{userName || '로딩 중...'}</Text>
             <Text style={styles.info}>
