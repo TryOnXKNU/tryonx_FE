@@ -16,7 +16,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuthStore } from '../store/useAuthStore'; // zustand 상태
 import axios from 'axios';
 import { RootStackParamList } from '../navigation/types';
-
 import Header from '../components/Header';
 
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
@@ -42,10 +41,6 @@ export default function MyPageScreen() {
   const handleLogout = () => {
     logout();
     Alert.alert('로그아웃 되었습니다.');
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
   };
 
   const handleWithdraw = () => {
