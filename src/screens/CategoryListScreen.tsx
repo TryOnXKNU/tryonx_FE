@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react'; // useEffect 추가
 import {
   View,
   Text,
@@ -11,8 +11,18 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../components/Header';
-
+import { useAuthStore } from '../store/useAuthStore';
+import axios from 'axios';
 import { RootStackParamList } from '../navigation/types';
+
+type Product = {
+  productId: number;
+  productName: string;
+  productPrice: number;
+  likeCount: number;
+  categoryId: number;
+  thumbnailUrl: string;
+};
 
 const categories = [
   'NewArrival',
@@ -26,87 +36,13 @@ const categories = [
 
 const sortOptions = ['인기순', '리뷰순', '신상품순', '고가순', '저가순'];
 
-const sampleData = [
-  {
-    id: '1',
-    category: 'tops',
-    image: 'https://picsum.photos/id/1/100',
-    name: '상의 티셔츠',
-    price: '12,000원',
-    likes: 10,
-  },
-  {
-    id: '2',
-    category: 'bottoms',
-    image: 'https://picsum.photos/id/2/100',
-    name: '청바지',
-    price: '25,000원',
-    likes: 8,
-  },
-  {
-    id: '3',
-    category: 'outerwear',
-    image: 'https://picsum.photos/id/3/100',
-    name: '자켓',
-    price: '35,000원',
-    likes: 15,
-  },
-  {
-    id: '4',
-    category: 'dresses',
-    image: 'https://picsum.photos/id/4/100',
-    name: '원피스',
-    price: '28,000원',
-    likes: 12,
-  },
-  {
-    id: '5',
-    category: 'acc',
-    image: 'https://picsum.photos/id/5/100',
-    name: '가방',
-    price: '18,000원',
-    likes: 5,
-  },
-  {
-    id: '6',
-    category: 'tops',
-    image: 'https://picsum.photos/id/6/100',
-    name: '셔츠',
-    price: '15,000원',
-    likes: 9,
-  },
-  {
-    id: '7',
-    category: 'bottoms',
-    image: 'https://picsum.photos/id/7/100',
-    name: '슬랙스',
-    price: '22,000원',
-    likes: 6,
-  },
-  {
-    id: '8',
-    category: 'acc',
-    image: 'https://picsum.photos/id/8/100',
-    name: '모자',
-    price: '9,000원',
-    likes: 4,
-  },
-  {
-    id: '9',
-    category: 'NewArrival',
-    image: 'https://picsum.photos/id/9/100',
-    name: '신상 자켓',
-    price: '39,000원',
-    likes: 11,
-  },
-];
-
 type CategoryListScreenRouteProp = RouteProp<
   RootStackParamList,
   'CategoryList'
 >;
 
 export default function CategoryListScreen() {
+  const token = useAuthStore(state => state.token);
   const route = useRoute<CategoryListScreenRouteProp>();
   const { selectedCategory: initialCategory } = route.params || {};
 
@@ -121,53 +57,100 @@ export default function CategoryListScreen() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
 
-  //   const filteredData =
-  //     selectedCategory === 'all'
-  //       ? sampleData
-  //       : sampleData.filter(item => item.category === selectedCategory);
+  // 상태 추가
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchProducts() {
+      setLoading(true);
+      try {
+        const response = await axios.get<Product[]>(
+          'http://localhost:8080/api/v1/products',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        setProducts(response.data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, [token]);
 
   const filteredAndSortedData = () => {
-    const data =
+    let data =
       selectedCategory === 'all'
-        ? sampleData
-        : sampleData.filter(item => item.category === selectedCategory);
+        ? products
+        : products.filter(item => {
+            switch (selectedCategory) {
+              case 'tops':
+                return item.categoryId === 1;
+              case 'bottoms':
+                return item.categoryId === 2;
+              case 'outerwear':
+                return item.categoryId === 3;
+              case 'dresses':
+                return item.categoryId === 4;
+              case 'acc':
+                return item.categoryId >= 5 && item.categoryId <= 15;
+              case 'NewArrival':
+                // 임시로 전체 리턴
+                return true;
+              default:
+                return false;
+            }
+          });
 
     switch (selectedSort) {
       case '인기순':
-        return [...data].sort((a, b) => b.likes - a.likes);
+        return [...data].sort((a, b) => b.likeCount - a.likeCount);
       case '리뷰순':
-        return [...data]; // 리뷰 데이터가 없으므로 우선 그대로
+        return [...data]; // 리뷰 데이터 없으면 그대로
       case '신상품순':
-        return [...data].sort((a, b) => Number(b.id) - Number(a.id)); // ID를 기준으로 간단히
+        return [...data].sort((a, b) => b.productId - a.productId);
       case '고가순':
-        return [...data].sort(
-          (a, b) =>
-            parseInt(b.price.replace(/[^0-9]/g, ''), 10) -
-            parseInt(a.price.replace(/[^0-9]/g, ''), 10),
-        );
+        return [...data].sort((a, b) => b.productPrice - a.productPrice);
       case '저가순':
-        return [...data].sort(
-          (a, b) =>
-            parseInt(a.price.replace(/[^0-9]/g, ''), 10) -
-            parseInt(b.price.replace(/[^0-9]/g, ''), 10),
-        );
+        return [...data].sort((a, b) => a.productPrice - b.productPrice);
       default:
         return data;
     }
   };
-  const renderItem = ({ item }: { item: (typeof sampleData)[0] }) => (
+
+  const renderItem = ({ item }: { item: Product }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
       style={styles.itemContainer}
     >
-      <Image source={{ uri: item.image }} style={styles.itemImage} />
+      <Image
+        source={{
+          // uri: item.thumbnailUrl.startsWith('http')
+          //   ? item.thumbnailUrl
+          //   : `http://localhost:8080${item.thumbnailUrl}`,
+          uri: item.thumbnailUrl.startsWith('http')
+            ? item.thumbnailUrl
+            : `http://192.168.0.100:8080${item.thumbnailUrl}`,
+        }}
+        style={styles.itemImage}
+      />
       <Text style={styles.itemName} numberOfLines={1}>
-        {item.name}
+        {item.productName}
       </Text>
-      <Text style={styles.itemPrice}>{item.price}</Text>
+      <Text style={styles.itemPrice}>
+        {item.productPrice.toLocaleString()}원
+      </Text>
       <View style={styles.likesRow}>
         <Icon name="heart" size={14} color="#e74c3c" />
-        <Text style={styles.likesText}>{item.likes}</Text>
+        <Text style={styles.likesText}>{item.likeCount}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -238,10 +221,13 @@ export default function CategoryListScreen() {
       <FlatList
         data={filteredAndSortedData()}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.productId.toString()}
         numColumns={3}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          loading ? <Text>Loading...</Text> : <Text>상품이 없습니다.</Text>
+        }
       />
     </View>
   );
@@ -251,7 +237,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
-    overflow: 'visible', // 드롭다운 가려짐 방지용
+    overflow: 'visible',
   },
 
   headerWrapper: {
@@ -274,7 +260,7 @@ const styles = StyleSheet.create({
   dropdownWrapper: {
     flex: 1,
     marginHorizontal: 4,
-    position: 'relative', // 기준점 설정
+    position: 'relative',
     zIndex: 100,
   },
 
@@ -294,8 +280,8 @@ const styles = StyleSheet.create({
   },
 
   dropdownMenu: {
-    position: 'absolute', // 레이아웃에서 분리
-    top: '100%', // 버튼 아래쪽에 붙게
+    position: 'absolute',
+    top: '100%',
     left: 0,
     right: 0,
     backgroundColor: '#fff',
@@ -307,9 +293,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    // alignSelf: 'flex-end',
-    // minWidth: 120,
-    // maxWidth: 200,
   },
 
   dropdownItem: {

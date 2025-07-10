@@ -19,7 +19,7 @@ import axios from 'axios';
 axios.defaults.baseURL = 'http://localhost:8080';
 
 const bodyTypes = ['straight', 'natural', 'wave', 'none'];
-const genders = ['남자', '여자'];
+// const genders = ['남자', '여자'];
 
 export default function SignUpScreen() {
   const navigation =
@@ -44,7 +44,7 @@ export default function SignUpScreen() {
   const [weight, setWeight] = useState('');
   const [agree1, setAgree1] = useState(false);
   const [agree2, setAgree2] = useState(false);
-  const [gender, setGender] = useState<string | null>(null);
+  // const [gender, setGender] = useState<string | null>(null);
 
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -178,10 +178,10 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (!gender) {
-      Alert.alert('성별을 선택해주세요.');
-      return;
-    }
+    // if (!gender) {
+    //   Alert.alert('성별을 선택해주세요.');
+    //   return;
+    // }
 
     if (!isNumberOnly(height) || !isNumberOnly(weight)) {
       Alert.alert('키와 몸무게는 숫자만 입력해주세요.');
@@ -197,7 +197,7 @@ export default function SignUpScreen() {
         nickname,
         bodyType: bodyTypes.indexOf(selectedBodyType || 'none'),
         birthDate: birthday.toISOString().split('T')[0],
-        gender: genders.indexOf(gender),
+        // gender: genders.indexOf(gender),
         height: parseInt(height, 10),
         weight: parseInt(weight, 10),
       });
@@ -451,8 +451,8 @@ export default function SignUpScreen() {
         />
 
         {/* 성별 라디오 버튼 */}
-        <Text style={[styles.label, styles.marginTop12]}>성별</Text>
-        <View style={styles.genderRow}>
+        {/* <Text style={[styles.label, styles.marginTop12]}>성별</Text> */}
+        {/* <View style={styles.genderRow}>
           {genders.map(g => (
             <TouchableOpacity
               key={g}
@@ -468,7 +468,7 @@ export default function SignUpScreen() {
               <Text style={styles.genderText}>{g}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
 
         <View style={styles.authRow}>
           <TextInput

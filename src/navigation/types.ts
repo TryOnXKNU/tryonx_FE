@@ -17,11 +17,11 @@ export type RootStackParamList = {
 };
 
 // ProductDetail 용도
-export type Product = {
-  id: string;
-  category: string;
-  image: string;
-  name: string;
-  price: string;
-  likes: number;
+type Product = {
+  productId: number;
+  productName: string;
+  productPrice: number;
+  likeCount: number;
+  categoryId: number;
+  thumbnailUrl: string;
 };
