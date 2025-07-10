@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,50 +11,68 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Header from '../components/Header';
-
+import { useAuthStore } from '../store/useAuthStore'; // zustand 상태
+import axios from 'axios';
 type Props = NativeStackScreenProps<RootStackParamList, 'SearchOutput'>;
 
 interface SearchResultItem {
-  id: string;
-  name: string;
-  // 필요하면 다른 필드 추가
+  productName: string;
+  price: number;
+  discountRate: number;
+  images: { imageUrl: string }[];
 }
 
 export default function SearchOutputScreen({ route, navigation }: Props) {
+  const token = useAuthStore(state => state.token);
   const { keyword } = route.params;
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResultItem[]>([]);
 
+  const fetchSearchResults = useCallback(
+    async (searchTerm: string) => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          'http://localhost:8080/api/v1/search',
+          {
+            params: { keyword: searchTerm },
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        if (response.status === 200) {
+          setResults(response.data);
+        } else {
+          throw new Error('서버 오류');
+        }
+      } catch (error) {
+        Alert.alert('오류', '검색 결과를 불러오는 데 실패했습니다.');
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token],
+  ); // token이 바뀌면 이 함수도 재생성됨
+
   useEffect(() => {
     navigation.setOptions({ title: `"${keyword}" 검색결과` });
     fetchSearchResults(keyword);
-  }, [keyword, navigation]);
-
-  const fetchSearchResults = async (searchTerm: string) => {
-    setLoading(true);
-
-    // TODO: 실제 API 호출 부분. 예시로 setTimeout으로 대체
-    setTimeout(() => {
-      // 예시 데이터
-      const fakeResults = [
-        { id: '1', name: `${searchTerm} 아이템 1` },
-        { id: '2', name: `${searchTerm} 아이템 2` },
-        { id: '3', name: `${searchTerm} 아이템 3` },
-      ];
-      setResults(fakeResults);
-      setLoading(false);
-    }, 1000);
-  };
+  }, [keyword, navigation, fetchSearchResults]);
 
   const renderItem = ({ item }: { item: SearchResultItem }) => (
     <TouchableOpacity
       style={styles.item}
       onPress={() => {
-        // 클릭 시 상세페이지 이동 등 필요시 구현
-        Alert.alert('알림', `${item.name} 선택됨`);
+        Alert.alert('알림', `${item.productName} 선택됨`);
       }}
     >
-      <Text style={styles.itemText}>{item.name}</Text>
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.productName}</Text>
+        <Text style={styles.price}>
+          ₩ {item.price.toLocaleString()} ({item.discountRate}% 할인)
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -78,7 +96,7 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={item => item.id}
+          keyExtractor={(item, index) => item.productName + index}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
         />
@@ -88,40 +106,23 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  loadingWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#555',
-  },
-  emptyWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#999',
-  },
-  listContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  loadingWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 16, color: '#555' },
+  emptyWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { fontSize: 18, color: '#999' },
+  listContainer: { padding: 16 },
   item: {
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: '#eee',
   },
-  itemText: {
+  info: { justifyContent: 'center' },
+  name: {
     fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
     color: '#000',
   },
+  price: { fontSize: 14, color: '#888' },
 });
