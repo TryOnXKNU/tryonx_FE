@@ -13,15 +13,15 @@ export type RootStackParamList = {
   EditProfileImage: undefined;
   Notification: undefined;
   CategoryList: { selectedCategory: string };
-  ProductDetail: { product: Product };
+  ProductDetail: { productId: number };
 };
 
-// ProductDetail 용도
-type Product = {
-  productId: number;
-  productName: string;
-  productPrice: number;
-  likeCount: number;
-  categoryId: number;
-  thumbnailUrl: string;
-};
+// // ProductDetail 용도
+// type Product = {
+//   productId: number;
+//   productName: string;
+//   productPrice: number;
+//   likeCount: number;
+//   categoryId: number;
+//   thumbnailUrl: string;
+// };
