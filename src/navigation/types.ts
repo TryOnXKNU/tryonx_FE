@@ -14,6 +14,10 @@ export type RootStackParamList = {
   Notification: undefined;
   CategoryList: { selectedCategory: string };
   ProductDetail: { productId: number };
+  ReviewList: undefined;
+  QaList: undefined;
+  // ReviewList: { productId: number };
+  // QaList: { productId: number };
 };
 
 // // ProductDetail 용도
