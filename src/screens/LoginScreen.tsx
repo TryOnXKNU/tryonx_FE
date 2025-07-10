@@ -106,7 +106,7 @@ function LoginScreen() {
       setToken(res.data.token);
 
       Alert.alert('로그인 성공', `${profile.nickname}님 환영합니다!`);
-      navigation.navigate('Main');
+      // navigation.navigate('Main');
     } catch (error) {
       console.error('카카오 로그인 실패:', error);
       Alert.alert('카카오 로그인 실패', '오류가 발생했습니다.');

@@ -1,4 +1,3 @@
-// src/navigation/types.ts
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -13,4 +12,16 @@ export type RootStackParamList = {
   EditProfile: undefined;
   EditProfileImage: undefined;
   Notification: undefined;
+  CategoryList: { selectedCategory: string };
+  ProductDetail: { product: Product };
+};
+
+// ProductDetail 용도
+export type Product = {
+  id: string;
+  category: string;
+  image: string;
+  name: string;
+  price: string;
+  likes: number;
 };

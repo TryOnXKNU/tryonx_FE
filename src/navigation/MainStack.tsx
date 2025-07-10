@@ -8,6 +8,8 @@ import SearchOutputScreen from '../screens/SearchOutputScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import EditProfileImageScreen from '../screens/EditProfileImageScreen';
 import NotificationScreen from '../screens/NotificationScreen';
+import CategoryListScreen from '../screens/CategoryListScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
 
@@ -23,6 +25,8 @@ export default function MainStack() {
         component={EditProfileImageScreen}
       />
       <Stack.Screen name="Notification" component={NotificationScreen} />
+      <Stack.Screen name="CategoryList" component={CategoryListScreen} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
     </Stack.Navigator>
   );
 }
