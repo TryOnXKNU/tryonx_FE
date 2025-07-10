@@ -12,11 +12,14 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 import { RootStackParamList } from '../navigation/types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+const SERVER_URL = 'http://localhost:8080';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -29,12 +32,20 @@ type ProductDetail = {
   description: string;
   productImages: string[];
   size: string[];
+  measurements?: {
+    label: string;
+    value: string;
+  }[];
+  liked?: boolean;
 };
 
 export default function ProductDetailScreen() {
   const route = useRoute<ProductDetailRouteProp>();
   const token = useAuthStore(state => state.token);
   const { productId } = route.params;
+
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,9 +54,51 @@ export default function ProductDetailScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // 좋아요 토글 상태 관리 (임시로 상태 추가)
+  // 좋아요 토글 상태 관리
   const [liked, setLiked] = useState(false);
+  // 서버로부터 받은 likeCount 상태를 따로 관리 (좋아요 상태 반영용)
+  const [likeCount, setLikeCount] = useState(0);
 
+  // 상세 탭
+  const [activeTab, setActiveTab] = useState<'info' | 'review' | 'qa'>('info');
+  const scrollY = useRef(0);
+  const infoRef = useRef<View>(null);
+  const reviewRef = useRef<View>(null);
+  const qaRef = useRef<View>(null);
+  const mainScrollRef = useRef<ScrollView>(null);
+
+  // 섹션별 y 좌표 저장
+  const sectionTops = useRef<{ info?: number; review?: number; qa?: number }>(
+    {},
+  );
+
+  // 스크롤 시 현재 위치 기반으로 activeTab 변경
+  const handleMainScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y;
+    scrollY.current = y;
+
+    const sectionOffsets = sectionTops.current;
+
+    if (sectionOffsets.qa !== undefined && y >= sectionOffsets.qa - 100) {
+      setActiveTab('qa');
+    } else if (
+      sectionOffsets.review !== undefined &&
+      y >= sectionOffsets.review - 100
+    ) {
+      setActiveTab('review');
+    } else {
+      setActiveTab('info');
+    }
+  };
+
+  // 섹션 탭 누르면 해당 위치로 스크롤
+  const scrollToSection = (section: 'info' | 'review' | 'qa') => {
+    let y = sectionTops.current[section] ?? 0;
+    mainScrollRef.current?.scrollTo({ y: y - 90, animated: true });
+    setActiveTab(section); // 여기에 추가
+  };
+
+  // 좋아요 토글 함수
   const toggleLike = async () => {
     try {
       await axios.post(
@@ -58,6 +111,9 @@ export default function ProductDetailScreen() {
         },
       );
       setLiked(prev => !prev);
+
+      // 좋아요 상태가 바뀌었으니 likeCount도 1 증가 또는 감소 반영
+      setLikeCount(prev => (liked ? prev - 1 : prev + 1));
     } catch (err) {
       console.error('좋아요 요청 실패:', err);
       Alert.alert('좋아요 실패', '다시 시도해 주세요.');
@@ -67,7 +123,6 @@ export default function ProductDetailScreen() {
   const handleBuy = () => {
     Alert.alert('구매하기 클릭됨');
   };
-  const SERVER_URL = 'http://localhost:8080';
 
   useEffect(() => {
     if (!token) return;
@@ -82,7 +137,22 @@ export default function ProductDetailScreen() {
             timeout: 10000,
           },
         );
-        setProduct(response.data);
+
+        // measurements 정보가 없으면 기본값 추가
+        const productData = {
+          ...response.data,
+          measurements: response.data.measurements ?? [
+            { label: '어깨', value: '48cm' },
+            { label: '가슴', value: '56cm' },
+            { label: '총장', value: '72cm' },
+            { label: '소매길이', value: '63cm' },
+          ],
+        };
+
+        setProduct(productData);
+        setLiked(productData.liked ?? false);
+        setLikeCount(productData.likeCount);
+
         setError(null);
       } catch (err) {
         console.error(err);
@@ -98,6 +168,13 @@ export default function ProductDetailScreen() {
   const getImageUrl = (url: string) => {
     if (url.startsWith('http')) return url;
     return encodeURI(`${SERVER_URL}${url}`);
+  };
+
+  // 이미지 스크롤 인덱스 계산 (가로 스크롤)
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / (370 + 12)); // 이미지 폭 + marginRight 값 기준
+    setCurrentIndex(index);
   };
 
   if (loading) {
@@ -123,13 +200,6 @@ export default function ProductDetailScreen() {
     4: 'Dresses',
   };
 
-  // 스크롤 이벤트에서 현재 인덱스 계산
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / (370 + 12)); // 이미지 폭 + marginRight 값 기준
-    setCurrentIndex(index);
-  };
-
   function getCategoryName(categoryId: number): string {
     if (categoryId >= 5 && categoryId <= 15) {
       return 'Accessories';
@@ -139,65 +209,241 @@ export default function ProductDetailScreen() {
 
   const likedTextStyle = liked ? styles.likedColor : undefined;
 
+  // ScrollView 내 섹션 컴포넌트 위치 측정 후 저장하는 함수
+  const measureSection =
+    (section: 'info' | 'review' | 'qa') => (event: any) => {
+      const layout = event.nativeEvent.layout;
+      sectionTops.current[section] = layout.y;
+    };
+
+  // (중략) dummy 데이터
+  const dummyReviews = [
+    {
+      id: 1,
+      author: '홍길동',
+      rating: 5,
+      content: '정말 좋아요!',
+      date: '2025-07-01',
+    },
+    {
+      id: 2,
+      author: '김철수',
+      rating: 4,
+      content: '사이즈가 조금 작아요',
+      date: '2025-07-02',
+    },
+    {
+      id: 3,
+      author: '김철수',
+      rating: 4,
+      content: '사이즈가 조금 작아요',
+      date: '2025-07-02',
+    },
+  ];
+
+  const dummyQas = [
+    {
+      id: 1,
+      type: '사이즈',
+      title: 'L 사이즈 있나요?',
+      status: '답변 완료',
+      date: '2025-06-25',
+    },
+    {
+      id: 2,
+      type: '배송',
+      title: '배송 기간은?',
+      status: '답변 대기',
+      date: '2025-06-26',
+    },
+    {
+      id: 3,
+      type: '배송',
+      title: '배송 기간은?',
+      status: '답변 대기',
+      date: '2025-06-26',
+    },
+  ];
+
   return (
     <View style={styles.container}>
       <Header showRightIcons={true} hideBackButton={false} />
 
-      {product.productImages.length > 0 && (
-        <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.imageScrollView}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            ref={scrollViewRef}
+      <ScrollView
+        style={styles.container}
+        ref={mainScrollRef}
+        onScroll={handleMainScroll}
+        scrollEventThrottle={16}
+      >
+        {product.productImages.length > 0 && (
+          <>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.imageScrollView}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              ref={scrollViewRef}
+            >
+              {product.productImages.map((imgUrl, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: getImageUrl(imgUrl) }}
+                  style={styles.productImage}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+
+            {/* 도트 페이징 */}
+            <View style={styles.dotsContainer}>
+              {product.productImages.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.dot,
+                    currentIndex === index && styles.activeDot,
+                  ]}
+                />
+              ))}
+            </View>
+          </>
+        )}
+
+        <View style={styles.infoScrollView}>
+          <View
+            onLayout={measureSection('info')}
+            ref={infoRef}
+            style={styles.infoSection}
           >
-            {product.productImages.map((imgUrl, index) => (
-              <Image
-                key={index}
-                source={{ uri: getImageUrl(imgUrl) }}
-                style={styles.productImage}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-
-          {/* 도트 페이징 */}
-          <View style={styles.dotsContainer}>
-            {product.productImages.map((_, index) => (
-              <View
-                key={index}
-                style={[styles.dot, currentIndex === index && styles.activeDot]}
-              />
-            ))}
-          </View>
-        </>
-      )}
-
-      <ScrollView style={styles.infoScrollView}>
-        <View style={styles.infoSection}>
-          <Text style={styles.category}>
-            {getCategoryName(product.categoryId)}
-          </Text>
-          <Text style={styles.name}>{product.productName}</Text>
-          <View style={styles.likesRow}>
-            <Icon name="heart" size={16} color="#e74c3c" />
-            <Text style={styles.likesText}>
-              {product.likeCount} 좋아요(추후 평점 리뷰 로 변경)
+            <Text style={styles.category}>
+              {getCategoryName(product.categoryId)}
             </Text>
+            <Text style={styles.name}>{product.productName}</Text>
+            <View style={styles.likesRow}>
+              <Icon name="heart" size={16} color="#e74c3c" />
+              <Text style={styles.likesText}>
+                {likeCount} 좋아요(추후 평점 리뷰 로 변경)
+              </Text>
+            </View>
+            <Text style={styles.price}>
+              {product.productPrice.toLocaleString()} 원
+            </Text>
+
+            <Text style={styles.description}>{product.description}</Text>
+
+            {/* <Text style={styles.sizeTitle}>사이즈</Text>
+
+            <View style={styles.sizeContainer}>
+              {product.size?.map(size => (
+                <View key={size} style={styles.sizeBox}>
+                  <Text style={styles.sizeText}>{size}</Text>
+                </View>
+              ))}
+            </View> */}
+
+            <View style={styles.tabContainer}>
+              {['info', 'review', 'qa'].map(tab => (
+                <TouchableOpacity
+                  key={tab}
+                  onPress={() =>
+                    scrollToSection(tab as 'info' | 'review' | 'qa')
+                  }
+                  style={[
+                    styles.tabItem,
+                    activeTab === tab && styles.activeTabItem, // 밑줄 색 바꾸는 부분
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab && styles.activeTabText, // 글씨 색 바꾸는 부분
+                    ]}
+                  >
+                    {tab === 'info'
+                      ? '정보'
+                      : tab === 'review'
+                      ? '리뷰'
+                      : '문의'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {product.measurements && (
+              <>
+                <Text style={styles.sizeTitle}>실측 사이즈</Text>
+                <View style={styles.measureContainer}>
+                  {product.measurements.map(measure => (
+                    <View key={measure.label} style={styles.measureRow}>
+                      <Text style={styles.measureLabel}>{measure.label}</Text>
+                      <Text style={styles.measureValue}>{measure.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* 상세 이미지 */}
+            <View style={styles.imagesWrapper}>
+              {product.productImages.map((imgUrl, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: getImageUrl(imgUrl) }}
+                  style={styles.productImageGrid}
+                  resizeMode="cover"
+                />
+              ))}
+            </View>
           </View>
-          <Text style={styles.price}>
-            {product.productPrice.toLocaleString()} 원
-          </Text>
 
-          <Text style={styles.description}>{product.description}</Text>
+          {/* 리뷰 섹션 */}
+          <View onLayout={measureSection('review')} ref={reviewRef}>
+            <Text style={styles.sectionTitle}>
+              리뷰 ({dummyReviews.length})
+            </Text>
 
-          <Text style={styles.sizeTitle}>사이즈</Text>
-          <View style={styles.sizeContainer}>
-            {product.size.map(size => (
-              <View key={size} style={styles.sizeBox}>
-                <Text style={styles.sizeText}>{size}</Text>
+            {dummyReviews.slice(0, 2).map(r => (
+              <View key={r.id} style={styles.itemMarginBottom}>
+                <Text style={styles.reviewAuthor}>
+                  {r.author} ({r.rating}★)
+                </Text>
+                <Text>{r.content}</Text>
+                <Text style={styles.reviewDate}>{r.date}</Text>
+              </View>
+            ))}
+
+            {dummyReviews.length > 2 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ReviewList')}
+                style={styles.reviewAllButton}
+              >
+                <Text style={styles.reviewAllButtonText}>리뷰 전체 보기</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* 문의 섹션 */}
+          <View onLayout={measureSection('qa')} ref={qaRef}>
+            <View style={styles.qaHeader}>
+              <Text style={styles.sectionTitle}>
+                상품문의 ({dummyQas.length})
+              </Text>
+              {dummyQas.length > 2 && (
+                <TouchableOpacity onPress={() => navigation.navigate('QaList')}>
+                  <Text style={styles.qaMoreText}>더보기</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {dummyQas.slice(0, 2).map(q => (
+              <View key={q.id} style={styles.itemMarginBottom}>
+                <Text style={styles.qaType}>{q.type} 문의</Text>
+                <Text style={styles.qaType}>{q.title}</Text>
+                <View style={styles.qaStatusRow}>
+                  <Text style={[styles.qaStatusText]}>{q.status}</Text>
+                  <Text style={styles.qaDate}>{q.date}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -213,7 +459,7 @@ export default function ProductDetailScreen() {
             color={liked ? '#e74c3c' : '#555'}
           />
           <Text style={[styles.likeCountText, likedTextStyle]}>
-            {product.likeCount + (liked ? 1 : 0)}
+            {likeCount}
           </Text>
         </TouchableOpacity>
 
@@ -231,6 +477,7 @@ const styles = StyleSheet.create({
   imageScrollView: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    height: 400,
   },
 
   productImage: {
@@ -294,6 +541,7 @@ const styles = StyleSheet.create({
   sizeTitle: {
     fontSize: 18,
     fontWeight: '700',
+    marginTop: 16,
     marginBottom: 12,
     color: '#222',
   },
@@ -324,7 +572,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // 이미지 구분하기 위해서 점
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -346,7 +593,6 @@ const styles = StyleSheet.create({
     height: 10,
   },
 
-  // 하단 탭
   bottomTab: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -358,8 +604,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  //좋아요
   likeButton: {
-    flexDirection: 'column', // 세로 방향으로 정렬
+    flexDirection: 'column',
     alignItems: 'center',
     paddingRight: 20,
   },
@@ -375,6 +622,7 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
   },
 
+  // 구매 버튼
   buyButton: {
     flex: 1,
     backgroundColor: '#000',
@@ -388,5 +636,130 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+
+  // 탭 구분
+  measureContainer: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+
+  measureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  measureLabel: {
+    fontSize: 16,
+    color: '#555',
+  },
+
+  measureValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+
+  tabContainer: {
+    flexDirection: 'row',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  tabItem: {
+    marginRight: 30,
+    paddingBottom: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+
+  activeTabItem: {
+    borderBottomColor: '#000', // 밑줄 색
+  },
+
+  tabText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+
+  activeTabText: {
+    color: '#000',
+  },
+
+  imagesWrapper: {
+    marginTop: 16,
+    flexDirection: 'column', // 세로 정렬
+    // justifyContent: 'space-between', // 없어도 됨
+  },
+
+  productImageGrid: {
+    width: '100%',
+    height: 400,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+
+  // 리뷰 섹션
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  itemMarginBottom: {
+    marginBottom: 12,
+  },
+  reviewAuthor: {
+    marginVertical: 10,
+    fontWeight: '600',
+  },
+  reviewDate: {
+    marginVertical: 10,
+    fontSize: 12,
+    color: '#666',
+  },
+  reviewAllButton: {
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  reviewAllButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  // 문의 섹션
+  qaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 12,
+  },
+  qaMoreText: {
+    fontSize: 14,
+    color: '#888',
+  },
+  qaType: {
+    marginVertical: 10,
+    color: '#888',
+    fontWeight: '700',
+  },
+  qaStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    color: '#888',
+    marginVertical: 10,
+  },
+  qaStatusText: {
+    color: '#888',
+  },
+  qaDate: {
+    color: '#888',
   },
 });

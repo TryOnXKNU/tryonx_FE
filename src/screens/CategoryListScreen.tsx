@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'; // useEffect 추가
+import React, { useState } from 'react'; // useEffect 추가
 import {
   View,
   Text,
@@ -8,7 +8,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+  useFocusEffect,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../components/Header';
 import { useAuthStore } from '../store/useAuthStore';
@@ -63,29 +68,54 @@ export default function CategoryListScreen() {
 
   const SERVER_URL = 'http://localhost:8080';
 
-  useEffect(() => {
-    if (!token) return;
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!token) return;
 
-    async function fetchProducts() {
-      setLoading(true);
-      try {
-        const response = await axios.get<Product[]>(
-          `${SERVER_URL}/api/v1/products`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000,
-          },
-        );
-        setProducts(response.data);
-      } catch (error) {
-        console.error('Fetch error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+      const fetchProducts = async () => {
+        setLoading(true);
+        try {
+          const response = await axios.get<Product[]>(
+            `${SERVER_URL}/api/v1/products`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 10000,
+            },
+          );
+          setProducts(response.data);
+        } catch (error) {
+          console.error('Fetch error:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchProducts();
-  }, [token]);
+      fetchProducts();
+    }, [token]),
+  );
+  // useEffect(() => {
+  //   if (!token) return;
+
+  //   async function fetchProducts() {
+  //     setLoading(true);
+  //     try {
+  //       const response = await axios.get<Product[]>(
+  //         `${SERVER_URL}/api/v1/products`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //           timeout: 10000,
+  //         },
+  //       );
+  //       setProducts(response.data);
+  //     } catch (error) {
+  //       console.error('Fetch error:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   }
+
+  //   fetchProducts();
+  // }, [token]);
 
   const filteredAndSortedData = () => {
     let data =

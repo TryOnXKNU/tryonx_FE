@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,26 +11,56 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Header from '../components/Header';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
 
 export default function SearchScreen({ navigation }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [recentSearches, setRecentSearches] = useState([
-    '아우터',
-    '반팔',
-    '운동화',
-  ]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  const RECENT_SEARCHES_KEY = 'RECENT_SEARCHES';
+
+  // 화면이 포커스 될 때 AsyncStorage에서 recentSearches 불러오기
+  useFocusEffect(
+    useCallback(() => {
+      const loadRecentSearches = async () => {
+        try {
+          const jsonValue = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+          if (jsonValue != null) {
+            setRecentSearches(JSON.parse(jsonValue));
+          } else {
+            //setRecentSearches(['']); // 기본값
+          }
+        } catch (e) {
+          console.error('Failed to load recent searches:', e);
+        }
+      };
+      loadRecentSearches();
+    }, []),
+  );
+
+  const saveRecentSearches = async (searches: string[]) => {
+    try {
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+    } catch (e) {
+      console.error('Failed to save recent searches:', e);
+    }
+  };
 
   const handleSearch = () => {
     if (!searchTerm.trim()) return;
 
     Keyboard.dismiss();
 
+    let updatedSearches = recentSearches;
     if (!recentSearches.includes(searchTerm)) {
-      setRecentSearches([searchTerm, ...recentSearches]);
+      updatedSearches = [searchTerm, ...recentSearches];
+      setRecentSearches(updatedSearches);
+      saveRecentSearches(updatedSearches);
     }
 
-    // Replace this with navigation to your SearchOutput screen
     navigation.navigate('SearchOutput', { keyword: searchTerm });
 
     setSearchTerm('');
@@ -39,16 +69,57 @@ export default function SearchScreen({ navigation }: Props) {
   const handleTagPress = (term: string) => {
     Keyboard.dismiss();
 
+    let updatedSearches = recentSearches;
     if (!recentSearches.includes(term)) {
-      setRecentSearches([term, ...recentSearches]);
+      updatedSearches = [term, ...recentSearches];
+      setRecentSearches(updatedSearches);
+      saveRecentSearches(updatedSearches);
     }
 
     navigation.navigate('SearchOutput', { keyword: term });
   };
 
   const removeSearch = (term: string) => {
-    setRecentSearches(recentSearches.filter(item => item !== term));
+    const filtered = recentSearches.filter(item => item !== term);
+    setRecentSearches(filtered);
+    saveRecentSearches(filtered);
   };
+
+  // const [searchTerm, setSearchTerm] = useState('');
+  // const [recentSearches, setRecentSearches] = useState([
+  //   '아우터',
+  //   '반팔',
+  //   '운동화',
+  // ]);
+
+  // const handleSearch = () => {
+  //   if (!searchTerm.trim()) return;
+
+  //   Keyboard.dismiss();
+
+  //   if (!recentSearches.includes(searchTerm)) {
+  //     setRecentSearches([searchTerm, ...recentSearches]);
+  //   }
+
+  //   // Replace this with navigation to your SearchOutput screen
+  //   navigation.navigate('SearchOutput', { keyword: searchTerm });
+
+  //   setSearchTerm('');
+  // };
+
+  // const handleTagPress = (term: string) => {
+  //   Keyboard.dismiss();
+
+  //   if (!recentSearches.includes(term)) {
+  //     setRecentSearches([term, ...recentSearches]);
+  //   }
+
+  //   navigation.navigate('SearchOutput', { keyword: term });
+  // };
+
+  // const removeSearch = (term: string) => {
+  //   setRecentSearches(recentSearches.filter(item => item !== term));
+  // };
 
   return (
     <View style={styles.container}>
@@ -121,20 +192,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  rightIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    marginLeft: 16,
   },
   searchBar: {
     flexDirection: 'row',
