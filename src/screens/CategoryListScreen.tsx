@@ -61,6 +61,8 @@ export default function CategoryListScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const SERVER_URL = 'http://localhost:8080';
+
   useEffect(() => {
     if (!token) return;
 
@@ -68,16 +70,15 @@ export default function CategoryListScreen() {
       setLoading(true);
       try {
         const response = await axios.get<Product[]>(
-          'http://localhost:8080/api/v1/products',
+          `${SERVER_URL}/api/v1/products`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000,
           },
         );
         setProducts(response.data);
       } catch (error) {
-        console.error(error);
+        console.error('Fetch error:', error);
       } finally {
         setLoading(false);
       }
@@ -128,17 +129,17 @@ export default function CategoryListScreen() {
 
   const renderItem = ({ item }: { item: Product }) => (
     <TouchableOpacity
-      onPress={() => navigation.navigate('ProductDetail', { product: item })}
+      //onPress={() => navigation.navigate('ProductDetail', { product: item })}
+      onPress={() =>
+        navigation.navigate('ProductDetail', { productId: item.productId })
+      }
       style={styles.itemContainer}
     >
       <Image
         source={{
-          // uri: item.thumbnailUrl.startsWith('http')
-          //   ? item.thumbnailUrl
-          //   : `http://localhost:8080${item.thumbnailUrl}`,
           uri: item.thumbnailUrl.startsWith('http')
             ? item.thumbnailUrl
-            : `http://192.168.0.100:8080${item.thumbnailUrl}`,
+            : encodeURI(`${SERVER_URL}${item.thumbnailUrl}`),
         }}
         style={styles.itemImage}
       />

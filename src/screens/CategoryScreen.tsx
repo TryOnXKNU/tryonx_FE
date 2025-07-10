@@ -16,10 +16,10 @@ export default function CategoryScreen() {
   const categories = [
     'NewArrival',
     'all',
+    'bottoms',
     'tops',
     'dresses',
     'outerwear',
-    'bottoms',
     'acc',
   ];
 
