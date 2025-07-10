@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-// import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Header from '../components/Header';
+
+import { RootStackParamList } from '../navigation/types';
 
 export default function CategoryScreen() {
   const categories = [
@@ -21,11 +23,10 @@ export default function CategoryScreen() {
     'acc',
   ];
 
-  // 카테고리 눌렀을 때 이동 함수 예시
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const handleCategoryPress = (category: string) => {
-    console.log('카테고리 선택:', category);
-    // navigation.navigate('CategoryDetail', { category });
-    // 원하는 화면으로 네비게이트 추가 가능
+    navigation.navigate('CategoryList', { selectedCategory: category });
   };
 
   return (
