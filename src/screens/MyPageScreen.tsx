@@ -121,7 +121,11 @@ export default function MyPageScreen() {
 
         <View style={styles.menuList}>
           <MenuItem label="최근 본 상품" />
-          <MenuItem label="주문내역" />
+          <MenuItem
+            label="주문내역"
+            onPress={() => navigation.navigate('MyOrderList')}
+          />
+
           <MenuItem label="문의내역" />
           <MenuItem label="리뷰내역" />
         </View>
@@ -157,9 +161,15 @@ function QuickButton({
   );
 }
 
-function MenuItem({ label }: { label: string }) {
+function MenuItem({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress?: () => void; // 선택적 추가
+}) {
   return (
-    <TouchableOpacity style={styles.menuItem}>
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <Text style={styles.menuText}>{label}</Text>
       <Icon name="chevron-forward" size={20} color="#ccc" />
     </TouchableOpacity>

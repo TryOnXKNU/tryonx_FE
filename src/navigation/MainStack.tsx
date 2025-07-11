@@ -13,6 +13,11 @@ import ProductDetailScreen from '../screens/ProductDetailScreen';
 import QaListScreen from '../screens/QaListScreen';
 import ReviewListScreen from '../screens/ReviewListScreen';
 
+import MyOrderListScreen from '../screens/MyOrderListScreen';
+import OrderSheetScreen from '../screens/OrderSheetScreen';
+import OrderCompleteScreen from '../screens/OrderCompleteScreen';
+import OrderDetailScreen from '../screens/OrderDetailScreen';
+
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
 
 export default function MainStack() {
@@ -31,6 +36,12 @@ export default function MainStack() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="QaList" component={QaListScreen} />
       <Stack.Screen name="ReviewList" component={ReviewListScreen} />
+
+      <Stack.Screen name="MyOrderList" component={MyOrderListScreen} />
+      <Stack.Screen name="OrderSheet" component={OrderSheetScreen} />
+      <Stack.Screen name="OrderComplete" component={OrderCompleteScreen} />
+
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     </Stack.Navigator>
   );
 }

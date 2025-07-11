@@ -10,6 +10,8 @@ import {
   NativeScrollEvent,
   TouchableOpacity,
   Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -58,6 +60,14 @@ export default function ProductDetailScreen() {
   const [liked, setLiked] = useState(false);
   // 서버로부터 받은 likeCount 상태를 따로 관리 (좋아요 상태 반영용)
   const [likeCount, setLikeCount] = useState(0);
+
+  // 모달(구매하기 버튼 누를때)
+  // 1) 모달 상태 추가
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // 2) 사이즈 선택 상태, 수량 상태 추가
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
 
   // 상세 탭
   const [activeTab, setActiveTab] = useState<'info' | 'review' | 'qa'>('info');
@@ -120,8 +130,42 @@ export default function ProductDetailScreen() {
     }
   };
 
+  // 기존 handleBuy 함수 수정 -> 모달 열기
   const handleBuy = () => {
-    Alert.alert('구매하기 클릭됨');
+    if (!product?.size || product.size.length === 0) {
+      Alert.alert('사이즈 정보가 없습니다.');
+      return;
+    }
+    setSelectedSize(product.size[0]); // 기본 첫번째 사이즈 선택
+    setQuantity(1);
+    setModalVisible(true);
+  };
+
+  // 모달 내 구매하기 버튼 클릭 시 주문서 페이지로 이동
+  const handleConfirmPurchase = () => {
+    if (!selectedSize) {
+      Alert.alert('사이즈를 선택해 주세요.');
+      return;
+    }
+
+    setModalVisible(false);
+    // 주문서 페이지로 navigation, 선택 정보 params로 전달
+    navigation.navigate('OrderSheet', {
+      productId: product?.productId || 0,
+      size: selectedSize,
+      quantity,
+    });
+  };
+
+  // 장바구니 버튼 눌렀을 때 (임시 alert 처리)
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      Alert.alert('사이즈를 선택해 주세요.');
+      return;
+    }
+
+    Alert.alert('장바구니에 추가되었습니다.');
+    setModalVisible(false);
   };
 
   useEffect(() => {
@@ -467,6 +511,83 @@ export default function ProductDetailScreen() {
           <Text style={styles.buyButtonText}>구매하기</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 3) 구매하기 모달 */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalVisible(false)}
+        />
+
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>사이즈 선택</Text>
+          <View style={styles.sizeOptionsContainer}>
+            {product?.size.map(size => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.sizeOption,
+                  selectedSize === size && styles.sizeOptionSelected,
+                ]}
+                onPress={() => setSelectedSize(size)}
+              >
+                <Text
+                  style={[
+                    styles.sizeOptionText,
+                    selectedSize === size && styles.sizeOptionTextSelected,
+                  ]}
+                >
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.modalTitle, styles.modalTitleWithMarginTop]}>
+            수량 선택
+          </Text>
+          <View style={styles.quantityContainer}>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={() => setQuantity(q => (q > 1 ? q - 1 : 1))}
+            >
+              <Text style={styles.quantityButtonText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.quantityText}>{quantity}</Text>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={() => setQuantity(q => q + 1)}
+            >
+              <Text style={styles.quantityButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalBottomButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cartButton]}
+              onPress={handleAddToCart}
+            >
+              <Text style={styles.modalButtonText}>장바구니</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton]}
+              onPress={handleConfirmPurchase}
+            >
+              <Text
+                style={[styles.modalButtonText, styles.modalButtonTextWhite]}
+              >
+                구매하기
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -761,5 +882,117 @@ const styles = StyleSheet.create({
   },
   qaDate: {
     color: '#888',
+  },
+
+  // 모달
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: '#00000088',
+  },
+  modalTitleWithMarginTop: {
+    marginTop: 20,
+  },
+  modalButtonTextWhite: {
+    color: '#fff',
+  },
+  modalContent: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopRightRadius: 16,
+    borderTopLeftRadius: 16,
+    padding: 20,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+    color: '#222',
+  },
+
+  sizeOptionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  sizeOption: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+
+  sizeOptionSelected: {
+    borderColor: '#000',
+    backgroundColor: '#000',
+  },
+
+  sizeOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+
+  sizeOptionTextSelected: {
+    color: '#fff',
+  },
+
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  quantityButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  quantityButtonText: {
+    fontSize: 24,
+    color: '#333',
+    lineHeight: 24,
+  },
+
+  quantityText: {
+    marginHorizontal: 20,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+
+  modalBottomButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+  },
+
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+
+  cartButton: {
+    backgroundColor: '#eee',
+  },
+
+  confirmButton: {
+    backgroundColor: '#000',
+  },
+
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
