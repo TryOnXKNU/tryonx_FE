@@ -14,8 +14,15 @@ export type RootStackParamList = {
   Notification: undefined;
   CategoryList: { selectedCategory: string };
   ProductDetail: { productId: number };
+  OrderSheet: { productId: number; size: string; quantity: number };
+  OrderComplete: {
+    orderId: string;
+    productId: number;
+  };
   ReviewList: undefined;
   QaList: undefined;
+  MyOrderList: undefined;
+  OrderDetail: { orderId: string };
   // ReviewList: { productId: number };
   // QaList: { productId: number };
 };
