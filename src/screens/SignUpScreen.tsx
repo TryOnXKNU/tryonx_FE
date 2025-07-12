@@ -64,9 +64,37 @@ export default function SignUpScreen() {
 
   const [isNicknameChecked, setIsNicknameChecked] = useState(false);
 
+  // 이메일 중복 확인
+  const checkEmailDuplicate = async () => {
+    if (!userId) {
+      Alert.alert('이메일을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const res = await axios.post('/api/v1/auth/check-email', {
+        email: userId,
+      });
+
+      if (res.data === '중복된 이메일이 존재합니다.') {
+        Alert.alert('이미 등록된 이메일입니다.');
+        return false;
+      } else {
+        return true;
+      }
+    } catch (error) {
+      Alert.alert('이메일 중복 확인 실패', '잠시 후 다시 시도해주세요.');
+      return false;
+    }
+  };
+
   // 이메일 인증코드 전송
   const sendEmailCode = async () => {
     if (!userId) return Alert.alert('아이디(이메일)를 입력해주세요.');
+
+    const isDuplicate = await checkEmailDuplicate();
+    if (!isDuplicate) return; // 중복이면 인증 코드 전송 안 함
+
     try {
       await axios.post('/api/v1/auth/email/send', null, {
         params: { email: userId },

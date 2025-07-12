@@ -16,6 +16,8 @@ import ReviewListScreen from '../screens/ReviewListScreen';
 import MyOrderListScreen from '../screens/MyOrderListScreen';
 import OrderSheetScreen from '../screens/OrderSheetScreen';
 import OrderCompleteScreen from '../screens/OrderCompleteScreen';
+
+import WishlistScreen from '../screens/WishlistScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
@@ -42,6 +44,7 @@ export default function MainStack() {
       <Stack.Screen name="OrderComplete" component={OrderCompleteScreen} />
 
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <Stack.Screen name="Wishlist" component={WishlistScreen} />
     </Stack.Navigator>
   );
 }

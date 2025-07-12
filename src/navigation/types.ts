@@ -23,6 +23,8 @@ export type RootStackParamList = {
   QaList: undefined;
   MyOrderList: undefined;
   OrderDetail: { orderId: string };
+  Wishlist: undefined;
+
   // ReviewList: { productId: number };
   // QaList: { productId: number };
 };

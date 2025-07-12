@@ -3,29 +3,21 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Header from '../components/Header';
 type Props = {
-  route: {
-    params: {
-      orderId: string;
-      productId: number;
-    };
-  };
   navigation: any;
 };
 
-export default function OrderCompleteScreen({ route, navigation }: Props) {
-  const { orderId, productId } = route.params;
-
+export default function OrderCompleteScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
+      {/* <Header title="결제 완료" showRightIcons={true} hideBackButton={true} /> */}
       <Header title="결제 완료" showRightIcons={true} />
       <View style={styles.viewContainer}>
         <Icon name="check-circle" size={120} color="#4BB543" />
         <Text style={styles.title}>주문 완료 되었습니다.</Text>
-        <Text style={styles.orderNumber}>주문 번호: {orderId}</Text>
 
         <TouchableOpacity
           style={styles.detailButton}
-          onPress={() => navigation.navigate('MyOrderList', { productId })}
+          onPress={() => navigation.navigate('MyOrderList')}
         >
           <Text style={styles.detailButtonText}>주문 상세 확인 하기</Text>
         </TouchableOpacity>
@@ -48,12 +40,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#222',
-    textAlign: 'center',
-  },
-  orderNumber: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#888',
     textAlign: 'center',
   },
   detailButton: {

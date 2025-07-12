@@ -17,15 +17,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
 type OrderItem = {
-  orderId: string;
+  orderId: number;
   productName: string;
   size: 'XS' | 'S' | 'M' | 'L' | 'XL';
   quantity: number;
   price: number;
   imgUrl: string;
   orderItemsCount: number;
-  orderDate: string;
-  orderStatus: string;
+  orderedAt: string;
 };
 
 export default function MyOrderListScreen() {
@@ -33,6 +32,8 @@ export default function MyOrderListScreen() {
   const { token } = useAuthStore();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const IMAGE_BASE_URL = 'http://localhost:8080';
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -78,51 +79,58 @@ export default function MyOrderListScreen() {
       <Header title="주문내역" showRightIcons={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {orders.map(order => (
-          <View key={order.orderId} style={styles.orderCard}>
-            <Text style={styles.date}>{formatDate(order.orderDate)}</Text>
-            <Text style={styles.status}>{order.orderStatus}</Text>
+        {orders
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime(),
+          )
+          .map(order => (
+            <View key={order.orderId} style={styles.orderCard}>
+              <Text style={styles.date}>{formatDate(order.orderedAt)}</Text>
+              <Text style={styles.productName}>{order.orderId}</Text>
 
-            {/* 이미지 + 주문 정보 / 상세보기 버튼 */}
-            <View style={styles.productRow}>
-              <Image source={{ uri: order.imgUrl }} style={styles.productImg} />
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{order.productName}</Text>
-                <Text style={styles.sizeQty}>
-                  사이즈 {order.size} / {order.quantity}개
-                  {order.orderItemsCount > 1
-                    ? ` 외 ${order.orderItemsCount - 1}개`
-                    : ''}
-                </Text>
+              <View style={styles.productRow}>
+                <Image
+                  source={{ uri: IMAGE_BASE_URL + order.imgUrl }}
+                  style={styles.productImg}
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName}>{order.productName}</Text>
+                  <Text style={styles.sizeQty}>
+                    사이즈 {order.size} / {order.quantity}개
+                    {order.orderItemsCount > 1
+                      ? ` 외 ${order.orderItemsCount - 1}개`
+                      : ''}
+                  </Text>
+                </View>
+                <View style={styles.productNameRow}>
+                  <TouchableOpacity
+                    style={styles.detailBtn}
+                    onPress={() => handleDetail(order.orderId.toString())}
+                  >
+                    <Text style={styles.detailText}>상세보기</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.productNameRow}>
+
+              <View style={styles.actionButtonsRow}>
                 <TouchableOpacity
-                  style={styles.detailBtn}
-                  onPress={() => handleDetail(order.orderId)}
+                  style={[styles.actionBtn, styles.reorderBtn]}
+                  onPress={() => handleReorder(order.orderId.toString())}
                 >
-                  <Text style={styles.detailText}>상세보기</Text>
+                  <Text style={styles.reorderBtnText}>재구매</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.reviewBtn]}
+                  onPress={() => handleReview(order.orderId.toString())}
+                >
+                  <Text style={styles.reviewBtnText}>리뷰작성</Text>
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* 재구매 / 리뷰작성 버튼 */}
-            <View style={styles.actionButtonsRow}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.reorderBtn]}
-                onPress={() => handleReorder(order.orderId)}
-              >
-                <Text style={[styles.reorderBtnText]}>재구매</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.reviewBtn]}
-                onPress={() => handleReview(order.orderId)}
-              >
-                <Text style={[styles.reviewBtnText]}>리뷰작성</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+          ))}
 
         {orders.length === 0 && (
           <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>

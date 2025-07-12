@@ -23,7 +23,7 @@ export type AppStackParamList = {
     size: string;
     quantity: number;
   };
-  OrderCompleteScreen: { productId: number };
+  OrderComplete: { productId: number };
 };
 
 type OrderSheetScreenRouteProp = RouteProp<AppStackParamList, 'OrderSheet'>;
@@ -197,8 +197,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
       Alert.alert('주문 성공', '주문이 정상적으로 처리되었습니다.', [
         {
           text: '확인',
-          onPress: () =>
-            navigation.navigate('OrderCompleteScreen', { productId }),
+          onPress: () => navigation.navigate('OrderComplete', { productId }),
         },
       ]);
     } catch (error) {
