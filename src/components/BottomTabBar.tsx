@@ -52,12 +52,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: '#fff',
     paddingVertical: 8,
+    paddingBottom: 20,
     position: 'absolute',
     bottom: 0,
     width: '100%',
     borderTopWidth: 1,
     borderTopColor: '#ccc',
-    marginBottom: 10,
   },
   tabItem: {
     alignItems: 'center',

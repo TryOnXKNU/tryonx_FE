@@ -108,10 +108,15 @@ export default function ProductDetailScreen() {
     setActiveTab(section); // 여기에 추가
   };
 
+  // 좋아요 상태에 따라 텍스트 색상 다르게
+  const likedTextStyle = {
+    color: liked ? '#e74c3c' : '#555',
+  };
+
   // 좋아요 토글 함수
   const toggleLike = async () => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${SERVER_URL}/api/v1/${productId}/like`,
         {},
         {
@@ -120,10 +125,10 @@ export default function ProductDetailScreen() {
           },
         },
       );
-      setLiked(prev => !prev);
 
-      // 좋아요 상태가 바뀌었으니 likeCount도 1 증가 또는 감소 반영
-      setLikeCount(prev => (liked ? prev - 1 : prev + 1));
+      // 서버에서 응답으로 받은 liked, likeCount 값 사용
+      setLiked(res.data.liked);
+      setLikeCount(res.data.likeCount);
     } catch (err) {
       console.error('좋아요 요청 실패:', err);
       Alert.alert('좋아요 실패', '다시 시도해 주세요.');
@@ -185,6 +190,8 @@ export default function ProductDetailScreen() {
         // measurements 정보가 없으면 기본값 추가
         const productData = {
           ...response.data,
+          liked: response.data.liked,
+          likeCount: response.data.likeCount,
           measurements: response.data.measurements ?? [
             { label: '어깨', value: '48cm' },
             { label: '가슴', value: '56cm' },
@@ -194,8 +201,18 @@ export default function ProductDetailScreen() {
         };
 
         setProduct(productData);
-        setLiked(productData.liked ?? false);
         setLikeCount(productData.likeCount);
+
+        // 좋아요 누른 상품 목록 가져오기
+        const likesRes = await axios.get<
+          { productId: number; productName: string; imageUrl: string }[]
+        >(`${SERVER_URL}/api/v1/likes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // 현재 상품이 좋아요 목록에 있으면 liked true
+        const likedProductIds = likesRes.data.map(item => item.productId);
+        setLiked(likedProductIds.includes(productId));
 
         setError(null);
       } catch (err) {
@@ -250,8 +267,6 @@ export default function ProductDetailScreen() {
     }
     return categoryNames[categoryId] || 'Unknown';
   }
-
-  const likedTextStyle = liked ? styles.likedColor : undefined;
 
   // ScrollView 내 섹션 컴포넌트 위치 측정 후 저장하는 함수
   const measureSection =

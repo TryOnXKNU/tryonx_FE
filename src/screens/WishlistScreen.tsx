@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,60 +6,146 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import axios from 'axios';
 import Header from '../components/Header';
-const sampleData = [
-  {
-    id: '1',
-    image: 'https://picsum.photos/100',
-    name: '상품명1',
-    price: '12,000원',
-    likes: 10,
-  },
-  {
-    id: '2',
-    image: 'https://picsum.photos/104',
-    name: '상품명2',
-    price: '15,000원',
-    likes: 5,
-  },
-  {
-    id: '3',
-    image: 'https://picsum.photos/120',
-    name: '상품명3',
-    price: '20,000원',
-    likes: 2,
-  },
-];
+import { useAuthStore } from '../store/useAuthStore';
+import { RootStackParamList } from '../navigation/types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// 좋아요가 없을 때는 빈 배열로 바꾸면 확인 가능
-const wishlistData = sampleData; // [] 빈 배열로 테스트
+type WishlistScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Wishlist'
+>;
+
+type LikeItem = {
+  productId: number;
+  productName: string;
+  imageUrl: string;
+  liked: boolean; // 좋아요 상태
+};
+
+const SERVER_URL = 'http://localhost:8080';
 
 export default function WishlistScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<WishlistScreenNavigationProp>();
+  const token = useAuthStore(state => state.token);
 
-  const renderItem = ({ item }: { item: (typeof sampleData)[0] }) => (
-    <View style={styles.itemContainer}>
-      <Image source={{ uri: item.image }} style={styles.itemImage} />
-      <Text style={styles.itemName} numberOfLines={1}>
-        {item.name}
-      </Text>
-      <Text style={styles.itemPrice}>{item.price}</Text>
-      <View style={styles.likesRow}>
-        <Icon name="heart" size={14} color="#e74c3c" />
-        <Text style={styles.likesText}>{item.likes}</Text>
-      </View>
-    </View>
+  const [wishlistData, setWishlistData] = useState<LikeItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggleLike = async (productId: number) => {
+    if (!token) {
+      setError('로그인이 필요합니다.');
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${SERVER_URL}/api/v1/${productId}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const { liked } = response.data;
+
+      setWishlistData(prev => {
+        if (liked) {
+          // 좋아요가 켜진 경우 liked만 업데이트
+          return prev.map(item =>
+            item.productId === productId ? { ...item, liked } : item,
+          );
+        } else {
+          // 좋아요가 꺼진 경우 해당 아이템 목록에서 제거
+          return prev.filter(item => item.productId !== productId);
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      setError('좋아요를 변경하는데 실패했습니다.');
+    }
+  };
+
+  const fetchWishlist = useCallback(async () => {
+    if (!token) {
+      setError('로그인이 필요합니다.');
+      setWishlistData([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get<LikeItem[]>(
+        `${SERVER_URL}/api/v1/likes`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      setWishlistData(response.data);
+    } catch (err) {
+      console.error(err);
+      setError('좋아요 목록을 불러오는데 실패했습니다.');
+      setWishlistData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWishlist();
+    }, [fetchWishlist]),
   );
+
+  const renderItem = ({ item }: { item: LikeItem }) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('ProductDetail', { productId: item.productId })
+      }
+      style={styles.itemContainer}
+      activeOpacity={0.8}
+    >
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{ uri: SERVER_URL + item.imageUrl }}
+          style={styles.itemImage}
+        />
+
+        {/* 하트 터치 시 상품 전체 터치 이벤트가 발생하지 않도록 TouchableOpacity 분리 */}
+        <TouchableOpacity
+          style={styles.heartIconWrapper}
+          onPress={() => toggleLike(item.productId)}
+          activeOpacity={0.7}
+        >
+          <Icon name="heart" size={20} color="#e74c3c" />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.itemName} numberOfLines={1}>
+        {item.productName}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingWrapper}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.safeArea}>
-      {/* Header */}
       <Header title="좋아요" showRightIcons={true} hideBackButton={true} />
 
-      {wishlistData.length === 0 ? (
+      {error ? (
+        <View style={styles.emptyWrapper}>
+          <Text>{error}</Text>
+        </View>
+      ) : wishlistData.length === 0 ? (
         <View style={styles.emptyWrapper}>
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyTitle}>좋아요한 상품이 없습니다.</Text>
@@ -78,7 +164,7 @@ export default function WishlistScreen() {
         <FlatList
           data={wishlistData}
           renderItem={renderItem}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.productId.toString()}
           numColumns={3}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
@@ -90,29 +176,6 @@ export default function WishlistScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    justifyContent: 'space-between',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  marginLeft16: {
-    marginLeft: 16,
-  },
 
   listContainer: {
     paddingHorizontal: 12,
@@ -126,23 +189,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center',
   },
+  imageWrapper: {
+    position: 'relative',
+  },
   itemImage: {
     width: 100,
     height: 100,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 6, // 텍스트랑 간격 조금 줄임
   },
-  itemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-    alignSelf: 'stretch', // 전체 가로 폭 차지
-    textAlign: 'left', // 왼쪽 정렬
+  heartIconWrapper: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 12,
+    padding: 2,
   },
   itemPrice: {
     fontSize: 13,
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+  },
+  itemName: {
+    marginTop: 3,
+    paddingLeft: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
     alignSelf: 'stretch',
     textAlign: 'left',
   },
@@ -150,12 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'stretch',
-    justifyContent: 'flex-start', // 왼쪽 정렬
-  },
-  likesText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#e74c3c',
+    justifyContent: 'flex-start',
   },
 
   emptyWrapper: {
@@ -198,6 +267,12 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 18, // 글씨도 좀 더 크게
+    fontSize: 18,
+  },
+
+  loadingWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
