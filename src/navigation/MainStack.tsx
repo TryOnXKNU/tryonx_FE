@@ -20,6 +20,9 @@ import OrderCompleteScreen from '../screens/OrderCompleteScreen';
 import WishlistScreen from '../screens/WishlistScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 
+// 관리자
+import ProductAddScreen from '../screens/admin/ProductAddScreen';
+
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
 
 export default function MainStack() {
@@ -45,6 +48,9 @@ export default function MainStack() {
 
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
+
+      {/* 관리자 */}
+      <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
     </Stack.Navigator>
   );
 }

@@ -24,9 +24,11 @@ export type RootStackParamList = {
   MyOrderList: undefined;
   OrderDetail: { orderId: string };
   Wishlist: undefined;
-
   // ReviewList: { productId: number };
   // QaList: { productId: number };
+
+  // 관리자
+  ProductAdd: undefined;
 };
 
 // // ProductDetail 용도
