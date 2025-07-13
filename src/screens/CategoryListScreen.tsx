@@ -6,6 +6,7 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Button,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
@@ -205,6 +206,14 @@ export default function CategoryListScreen() {
         />
       </View>
 
+      {/* 상품 등록 버튼 */}
+      <View style={styles.addBtn}>
+        <Button
+          title="상품 등록"
+          onPress={() => navigation.navigate('ProductAdd')}
+        />
+      </View>
+
       <View style={styles.dropdownContainer}>
         {/* 정렬 드롭다운 */}
         <View style={styles.dropdownWrapper}>
@@ -265,6 +274,11 @@ export default function CategoryListScreen() {
 }
 
 const styles = StyleSheet.create({
+  //임시 버튼
+  addBtn: {
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',

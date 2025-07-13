@@ -7,20 +7,26 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Header from '../components/Header';
-import { useAuthStore } from '../store/useAuthStore'; // zustand 상태
+import { useAuthStore } from '../store/useAuthStore';
 import axios from 'axios';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'SearchOutput'>;
 
 interface SearchResultItem {
   productName: string;
   price: number;
   discountRate: number;
+  likeCount?: number;
   images: { imageUrl: string }[];
 }
+
+const SERVER_URL = 'http://localhost:8080';
 
 export default function SearchOutputScreen({ route, navigation }: Props) {
   const token = useAuthStore(state => state.token);
@@ -32,13 +38,10 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
     async (searchTerm: string) => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          'http://localhost:8080/api/v1/search',
-          {
-            params: { keyword: searchTerm },
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const response = await axios.get(`${SERVER_URL}/api/v1/search`, {
+          params: { keyword: searchTerm },
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (response.status === 200) {
           setResults(response.data);
@@ -53,7 +56,7 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
       }
     },
     [token],
-  ); // token이 바뀌면 이 함수도 재생성됨
+  );
 
   useEffect(() => {
     navigation.setOptions({ title: `"${keyword}" 검색결과` });
@@ -62,17 +65,30 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
 
   const renderItem = ({ item }: { item: SearchResultItem }) => (
     <TouchableOpacity
-      style={styles.item}
-      onPress={() => {
-        Alert.alert('알림', `${item.productName} 선택됨`);
-      }}
+      style={styles.itemContainer}
+      onPress={() => Alert.alert('상세보기', `${item.productName}`)}
     >
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.productName}</Text>
-        <Text style={styles.price}>
-          ₩ {item.price.toLocaleString()} ({item.discountRate}% 할인)
-        </Text>
-      </View>
+      <Image
+        source={{
+          uri:
+            item.images && item.images.length > 0
+              ? encodeURI(`${SERVER_URL}${item.images[0].imageUrl}`)
+              : 'https://via.placeholder.com/100',
+        }}
+        style={styles.itemImage}
+      />
+      <Text style={styles.itemName} numberOfLines={1}>
+        {item.productName}
+      </Text>
+      <Text style={styles.itemPrice}>
+        ₩ {item.price.toLocaleString()} ({item.discountRate}% 할인)
+      </Text>
+      {item.likeCount !== undefined && (
+        <View style={styles.likesRow}>
+          <Icon name="heart" size={14} color="#e74c3c" />
+          <Text style={styles.likesText}>{item.likeCount}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -96,9 +112,11 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item, index) => item.productName + index}
+          keyExtractor={(_, index) => index.toString()} // productId가 없으니 index 사용
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
+          numColumns={3}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -111,18 +129,46 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#555' },
   emptyWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 18, color: '#999' },
-  listContainer: { padding: 16 },
-  item: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  listContainer: {
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
-  info: { justifyContent: 'center' },
-  name: {
-    fontSize: 16,
+  itemContainer: {
+    flex: 1 / 3,
+    marginHorizontal: 13,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  itemImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  itemName: {
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 4,
-    color: '#000',
+    marginBottom: 2,
+    alignSelf: 'stretch',
+    textAlign: 'left',
   },
-  price: { fontSize: 14, color: '#888' },
+  itemPrice: {
+    fontSize: 13,
+    color: '#333',
+    marginBottom: 4,
+    alignSelf: 'stretch',
+    textAlign: 'left',
+  },
+  likesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+  },
+  likesText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#e74c3c',
+  },
 });
