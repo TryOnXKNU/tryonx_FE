@@ -9,7 +9,8 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
+
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Header from '../components/Header';
@@ -19,6 +20,7 @@ import axios from 'axios';
 type Props = NativeStackScreenProps<RootStackParamList, 'SearchOutput'>;
 
 interface SearchResultItem {
+  productId: number;
   productName: string;
   price: number;
   discountRate: number;
@@ -63,10 +65,18 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
     fetchSearchResults(keyword);
   }, [keyword, navigation, fetchSearchResults]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchSearchResults(keyword);
+    }, [keyword, fetchSearchResults]),
+  );
+
   const renderItem = ({ item }: { item: SearchResultItem }) => (
     <TouchableOpacity
       style={styles.itemContainer}
-      onPress={() => Alert.alert('상세보기', `${item.productName}`)}
+      onPress={() =>
+        navigation.navigate('ProductDetail', { productId: item.productId })
+      }
     >
       <Image
         source={{
@@ -83,12 +93,6 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
       <Text style={styles.itemPrice}>
         ₩ {item.price.toLocaleString()} ({item.discountRate}% 할인)
       </Text>
-      {item.likeCount !== undefined && (
-        <View style={styles.likesRow}>
-          <Icon name="heart" size={14} color="#e74c3c" />
-          <Text style={styles.likesText}>{item.likeCount}</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 
@@ -112,7 +116,7 @@ export default function SearchOutputScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(_, index) => index.toString()} // productId가 없으니 index 사용
+          keyExtractor={item => item.productId.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
           numColumns={3}
@@ -159,16 +163,5 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     alignSelf: 'stretch',
     textAlign: 'left',
-  },
-  likesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    justifyContent: 'flex-start',
-  },
-  likesText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#e74c3c',
   },
 });
