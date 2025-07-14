@@ -16,9 +16,11 @@ import ReviewListScreen from '../screens/ReviewListScreen';
 import MyOrderListScreen from '../screens/MyOrderListScreen';
 import OrderSheetScreen from '../screens/OrderSheetScreen';
 import OrderCompleteScreen from '../screens/OrderCompleteScreen';
+import AskFormScreen from '../screens/AskFormScreen';
 
 import WishlistScreen from '../screens/WishlistScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
+import InquiryScreen from '../screens/InquiryScreen';
 
 // 관리자
 import ProductAddScreen from '../screens/admin/ProductAddScreen';
@@ -42,13 +44,14 @@ export default function MainStack() {
       <Stack.Screen name="QaList" component={QaListScreen} />
       <Stack.Screen name="ReviewList" component={ReviewListScreen} />
 
+      <Stack.Screen name="Inquiry" component={InquiryScreen} />
+      <Stack.Screen name="AskForm" component={AskFormScreen} />
+
       <Stack.Screen name="MyOrderList" component={MyOrderListScreen} />
       <Stack.Screen name="OrderSheet" component={OrderSheetScreen} />
       <Stack.Screen name="OrderComplete" component={OrderCompleteScreen} />
-
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
-
       {/* 관리자 */}
       <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
     </Stack.Navigator>

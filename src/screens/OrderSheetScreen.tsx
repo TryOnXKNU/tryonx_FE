@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
 import { RouteProp, useIsFocused } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,7 +42,7 @@ type OrderPreviewResponse = {
   memberInfo: {
     name: string;
     phone: string;
-    address: string;
+    address: string | null;
     availablePoint: number;
   };
   totalAmount: number;
@@ -49,9 +50,12 @@ type OrderPreviewResponse = {
   finalAmount: number;
   expectedPoint: number;
   items: Array<{
-    productId: number;
-    size: string;
+    productName: string;
+    price: number;
     quantity: number;
+    size: string;
+    discountRate: string;
+    imageUrl: string;
   }>;
 };
 
@@ -259,18 +263,24 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
         </View>
 
         {/* 상품 정보 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>주문 상품</Text>
-          {orderPreview.items.map((item, idx) => (
-            <View key={idx} style={styles.item}>
-              <Text>이름 {item.productId}</Text>
-              <Text>
-                {item.size} / {item.quantity} 개
-              </Text>
-              <Text>(가격)원</Text>
+        {orderPreview.items.map((item, idx) => (
+          <View key={idx} style={styles.item}>
+            <View style={styles.itemRow}>
+              <Image
+                source={{ uri: `http://localhost:8080${item.imageUrl}` }}
+                style={styles.itemImage}
+              />
+              <View style={styles.itemtextCon}>
+                <Text style={styles.text}>{item.productName}</Text>
+                <Text style={styles.text}>
+                  {item.size} / {item.quantity}개
+                </Text>
+                <Text style={styles.text}>{item.price.toLocaleString()}원</Text>
+                <Text style={styles.text}>할인율: {item.discountRate}</Text>
+              </View>
             </View>
-          ))}
-        </View>
+          </View>
+        ))}
 
         {/* 포인트 */}
         <View style={styles.section}>
@@ -439,6 +449,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  itemtextCon: {
+    flex: 1,
+    marginLeft: 12,
+  },
   item: {
     padding: 14,
     backgroundColor: '#f9f9f9',
@@ -446,6 +460,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#eee',
     marginBottom: 12,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#eee',
   },
   input: {
     marginTop: 10,

@@ -24,6 +24,16 @@ export type RootStackParamList = {
   MyOrderList: undefined;
   OrderDetail: { orderId: string };
   Wishlist: undefined;
+
+  Inquiry: undefined;
+
+  AskForm: {
+    productName: string;
+    size: string;
+    orderItemId?: number;
+    imgUrl?: string;
+  };
+
   // ReviewList: { productId: number };
   // QaList: { productId: number };
 
