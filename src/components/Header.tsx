@@ -131,8 +131,16 @@ HeaderProps) {
 
         {showRightIcons && (
           <View style={styles.headerIcons}>
-            {showHomeButton && (
+            {/* {showHomeButton && (
               <TouchableOpacity onPress={() => navigation.navigate('Main')}>
+                <Icon name="home-outline" size={24} color="black" />
+              </TouchableOpacity>
+            )} */}
+
+            {showHomeButton && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+              >
                 <Icon name="home-outline" size={24} color="black" />
               </TouchableOpacity>
             )}
