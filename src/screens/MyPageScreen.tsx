@@ -126,7 +126,11 @@ export default function MyPageScreen() {
             onPress={() => navigation.navigate('MyOrderList')}
           />
 
-          <MenuItem label="문의내역" />
+          <MenuItem
+            label="문의내역"
+            onPress={() => navigation.navigate('Inquiry')}
+          />
+
           <MenuItem label="리뷰내역" />
         </View>
 
