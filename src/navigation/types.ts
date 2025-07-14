@@ -6,7 +6,13 @@ export type RootStackParamList = {
   FindId: undefined;
   ResetPassword: undefined;
   MyPage: undefined;
-  Main: undefined;
+
+  //Main: undefined;
+
+  Main:
+    | { screen: 'Home' | 'Category' | 'Fitting' | 'Wishlist' | 'MyPage' }
+    | undefined;
+
   Search: undefined;
   SearchOutput: { keyword: string };
   EditProfile: undefined;
@@ -40,13 +46,3 @@ export type RootStackParamList = {
   // 관리자
   ProductAdd: undefined;
 };
-
-// // ProductDetail 용도
-// type Product = {
-//   productId: number;
-//   productName: string;
-//   productPrice: number;
-//   likeCount: number;
-//   categoryId: number;
-//   thumbnailUrl: string;
-// };

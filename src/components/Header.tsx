@@ -19,6 +19,12 @@ interface HeaderProps {
   // 드롭다운 열림 상태, 토글 함수
   categoryOpen?: boolean;
   setCategoryOpen?: (open: boolean) => void;
+
+  // 홈
+  showHomeButton?: boolean;
+
+  //뒤로가기 다른곳으로
+  // onBackPress?: () => void;
 }
 
 export default function Header({
@@ -26,12 +32,18 @@ export default function Header({
   title,
   showRightIcons = true,
   hideBackButton = false,
+  // 카테고리
   categories,
   selectedCategory,
   onSelectCategory,
-  categoryOpen, // 이거 추가
-  setCategoryOpen, // 이거 추가
-}: HeaderProps) {
+  categoryOpen,
+  setCategoryOpen,
+
+  // 홈
+  showHomeButton = false,
+}: // 뒤로가기 다른 곳
+// onBackPress,
+HeaderProps) {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -50,6 +62,14 @@ export default function Header({
             />
           ) : (
             <View style={styles.backWrapper}>
+              {/* {!hideBackButton && (
+                <TouchableOpacity
+                  onPress={onBackPress ?? (() => navigation.goBack())}
+                >
+                  <Icon name="chevron-back" size={28} color="#000" />
+                </TouchableOpacity>
+              )} */}
+
               {!hideBackButton && (
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                   <Icon name="chevron-back" size={28} color="#000" />
@@ -111,7 +131,14 @@ export default function Header({
 
         {showRightIcons && (
           <View style={styles.headerIcons}>
+            {showHomeButton && (
+              <TouchableOpacity onPress={() => navigation.navigate('Main')}>
+                <Icon name="home-outline" size={24} color="black" />
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
+              style={styles.iconSpacing}
               onPress={() => navigation.navigate('Notification')}
             >
               <Icon name="notifications-outline" size={24} color="black" />
@@ -161,7 +188,7 @@ const styles = StyleSheet.create({
   headerIcons: {
     flexDirection: 'row',
     // width를 고정하거나 최소한의 크기로 제한해서 밀리는걸 방지
-    minWidth: 80,
+    minWidth: 120,
     justifyContent: 'flex-end',
   },
   iconSpacing: {

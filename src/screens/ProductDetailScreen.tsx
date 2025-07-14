@@ -326,7 +326,11 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Header showRightIcons={true} hideBackButton={false} />
+      <Header
+        showRightIcons={true}
+        showHomeButton={true}
+        hideBackButton={false}
+      />
 
       <ScrollView
         style={styles.container}

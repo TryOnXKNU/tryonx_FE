@@ -201,7 +201,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
       Alert.alert('주문 성공', '주문이 정상적으로 처리되었습니다.', [
         {
           text: '확인',
-          onPress: () => navigation.navigate('OrderComplete', { productId }),
+          onPress: () => navigation.replace('OrderComplete', { productId }),
         },
       ]);
     } catch (error) {
@@ -213,7 +213,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Header title="주문서" showRightIcons={true} />
+      <Header title="주문서" showHomeButton={true} showRightIcons={true} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* 배송지 정보 */}
         <View style={styles.section}>
