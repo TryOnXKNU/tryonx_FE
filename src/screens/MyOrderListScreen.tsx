@@ -76,7 +76,14 @@ export default function MyOrderListScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="주문내역" showRightIcons={true} />
+      <Header title="주문내역" showRightIcons={false} />
+
+      {/* <Header
+        title="주문내역"
+        showRightIcons={false}
+        showHomeButton={true}
+        onBackPress={() => navigation.navigate('Main', { screen: 'MyPage' })}
+      /> */}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {orders

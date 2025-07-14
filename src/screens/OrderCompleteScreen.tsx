@@ -10,14 +10,19 @@ export default function OrderCompleteScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       {/* <Header title="결제 완료" showRightIcons={true} hideBackButton={true} /> */}
-      <Header title="결제 완료" showRightIcons={true} />
+      <Header
+        title="결제 완료"
+        showRightIcons={true}
+        hideBackButton={true}
+        showHomeButton={true}
+      />
       <View style={styles.viewContainer}>
         <Icon name="check-circle" size={120} color="#4BB543" />
         <Text style={styles.title}>주문 완료 되었습니다.</Text>
 
         <TouchableOpacity
           style={styles.detailButton}
-          onPress={() => navigation.navigate('MyOrderList')}
+          onPress={() => navigation.replace('MyOrderList')}
         >
           <Text style={styles.detailButtonText}>주문 상세 확인 하기</Text>
         </TouchableOpacity>
