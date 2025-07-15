@@ -33,7 +33,7 @@ type ProductItemInfo = {
 };
 
 type FormType = {
-  code: string;
+  // code: string;
   name: string;
   description: string;
   price: string;
@@ -48,8 +48,40 @@ export default function ProductAddScreen() {
   const token = useAuthStore(state => state.token);
   const navigation = useNavigation();
 
+  // 상태 추가
+  // const [products, setProducts] = useState<Product[]>([]);
+  // const [loading, setLoading] = useState(false);
+
+  //const SERVER_URL = 'http://localhost:8080';
+
+  // 선택
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [bodyShapeOpen, setBodyShapeOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+
+  const categoryOptions = [
+    { label: 'Top', value: '1' },
+    { label: 'Bottom', value: '2' },
+    { label: 'Outwear', value: '3' },
+    { label: 'Dress', value: '4' },
+    { label: 'Acc', value: '5' },
+  ];
+
+  const bodyShapeOptions = [
+    { label: 'Straight', value: 'STRAIGHT' },
+    { label: 'Natural', value: 'NATURAL' },
+    { label: 'Wave', value: 'WAVE' },
+    { label: 'None', value: 'NONE' },
+  ];
+
+  const statusOptions = [
+    { label: 'Available (이용 가능)', value: 'AVAILABLE' },
+    { label: 'Sold Out (품절)', value: 'SOLDOUT' },
+    { label: 'Hidden (숨김)', value: 'HIDDEN' },
+  ];
+
   const placeholderMap: Record<string, string> = {
-    code: '상품 코드를 입력하세요.',
+    // code: '상품 코드를 입력하세요.',
     name: '상품명을 입력하세요.',
     description: '상품 설명을 입력하세요.',
     price: '상품 가격을 입력하세요.',
@@ -74,7 +106,7 @@ export default function ProductAddScreen() {
   ] as const;
 
   const [form, setForm] = useState<FormType>({
-    code: '',
+    // code: '',
     name: '',
     description: '',
     price: '',
@@ -138,7 +170,7 @@ export default function ProductAddScreen() {
     }
 
     const requiredFields: (keyof FormType)[] = [
-      'code',
+      // 'code',
       'name',
       'description',
       'price',
@@ -257,14 +289,11 @@ export default function ProductAddScreen() {
         {/* 기본 정보 입력 */}
         {(
           [
-            'code',
+            // 'code',
             'name',
             'description',
             'price',
             'discountRate',
-            'categoryId',
-            'bodyShape',
-            'status',
           ] as (keyof FormType)[]
         ).map(key => (
           <TextInput
@@ -275,6 +304,109 @@ export default function ProductAddScreen() {
             onChangeText={text => handleInputChange(key, text)}
           />
         ))}
+
+        <View style={styles.dropdownWrapper}>
+          {/* Category 드롭다운 */}
+          <Text style={styles.dropdownLabel}>카테고리</Text>
+          <TouchableOpacity
+            style={styles.dropdownButton}
+            onPress={() => {
+              setCategoryOpen(prev => !prev);
+              setBodyShapeOpen(false);
+              setStatusOpen(false);
+            }}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {categoryOptions.find(opt => opt.value === form.categoryId)
+                ?.label || '카테고리 선택'}
+            </Text>
+          </TouchableOpacity>
+          {categoryOpen && (
+            <View style={styles.dropdownMenu}>
+              {categoryOptions.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    handleInputChange('categoryId', opt.value);
+                    setCategoryOpen(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Body Shape 드롭다운 */}
+        <View style={styles.dropdownWrapper}>
+          <Text style={styles.dropdownLabel}>바디 쉐입</Text>
+          <TouchableOpacity
+            style={styles.dropdownButton}
+            onPress={() => {
+              setBodyShapeOpen(prev => !prev);
+              setCategoryOpen(false);
+              setStatusOpen(false);
+            }}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {
+                bodyShapeOptions.find(opt => opt.value === form.bodyShape)
+                  ?.label
+              }
+            </Text>
+          </TouchableOpacity>
+          {bodyShapeOpen && (
+            <View style={styles.dropdownMenu}>
+              {bodyShapeOptions.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    handleInputChange('bodyShape', opt.value);
+                    setBodyShapeOpen(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Status 드롭다운 */}
+        <View style={styles.dropdownWrapper}>
+          <Text style={styles.dropdownLabel}>상품 상태</Text>
+          <TouchableOpacity
+            style={styles.dropdownButton}
+            onPress={() => {
+              setStatusOpen(prev => !prev);
+              setCategoryOpen(false);
+              setBodyShapeOpen(false);
+            }}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {statusOptions.find(opt => opt.value === form.status)?.label}
+            </Text>
+          </TouchableOpacity>
+          {statusOpen && (
+            <View style={styles.dropdownMenu}>
+              {statusOptions.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    handleInputChange('status', opt.value);
+                    setStatusOpen(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
 
         {/* 사이즈별 재고 및 실측 입력 - 아코디언 */}
         {form.productItemInfoDtos.map((item, index) => (
@@ -416,5 +548,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 18,
+  },
+  dropdownWrapper: {
+    marginBottom: 12,
+  },
+  dropdownLabel: {
+    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f9f9f9',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownMenu: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    padding: 12,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedText: {
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
