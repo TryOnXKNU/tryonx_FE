@@ -25,6 +25,20 @@ const SERVER_URL = 'http://localhost:8080';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
+type ProductItem = {
+  size: string;
+  stock: number;
+  length: number;
+  shoulder: number;
+  chest: number;
+  sleeve_length: number;
+  waist: number;
+  thigh: number;
+  rise: number;
+  hem: number;
+  hip: number;
+};
+
 type ProductDetail = {
   productId: number;
   productName: string;
@@ -34,11 +48,20 @@ type ProductDetail = {
   description: string;
   productImages: string[];
   size: string[];
+  // measurements?: {
+  //   label: string;
+  //   value: string;
+  // }[];
   measurements?: {
-    label: string;
-    value: string;
+    size: string;
+    values: {
+      label: string;
+      value: string;
+    }[];
   }[];
+
   liked?: boolean;
+  productItems: ProductItem[];
 };
 
 export default function ProductDetailScreen() {
@@ -74,7 +97,7 @@ export default function ProductDetailScreen() {
   const scrollY = useRef(0);
   const infoRef = useRef<View>(null);
   const reviewRef = useRef<View>(null);
-  const qaRef = useRef<View>(null);
+
   const mainScrollRef = useRef<ScrollView>(null);
 
   // 섹션별 y 좌표 저장
@@ -137,11 +160,11 @@ export default function ProductDetailScreen() {
 
   // 기존 handleBuy 함수 수정 -> 모달 열기
   const handleBuy = () => {
-    if (!product?.size || product.size.length === 0) {
+    if (!product?.productItems || product.productItems.length === 0) {
       Alert.alert('사이즈 정보가 없습니다.');
       return;
     }
-    setSelectedSize(product.size[0]); // 기본 첫번째 사이즈 선택
+    setSelectedSize(product.productItems[0].size); // 첫 번째 사이즈 기본 선택
     setQuantity(1);
     setModalVisible(true);
   };
@@ -173,6 +196,26 @@ export default function ProductDetailScreen() {
     setModalVisible(false);
   };
 
+  // 각 productItem별로 측정값 배열 생성
+  const formatMeasurementsForAll = (items: ProductItem[]) => {
+    return items.map(item => ({
+      size: item.size,
+      values: [
+        { label: '어깨', value: item.shoulder },
+        { label: '가슴', value: item.chest },
+        { label: '총장', value: item.length },
+        { label: '소매길이', value: item.sleeve_length },
+        { label: '허리', value: item.waist },
+        { label: '허벅지', value: item.thigh },
+        { label: '밑위', value: item.rise },
+        { label: '밑단', value: item.hem },
+        { label: '엉덩이', value: item.hip },
+      ]
+        .filter(m => m.value !== null && m.value !== undefined && m.value !== 0)
+        .map(m => ({ label: m.label, value: `${m.value}cm` })),
+    }));
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -187,17 +230,15 @@ export default function ProductDetailScreen() {
           },
         );
 
-        // measurements 정보가 없으면 기본값 추가
+        // API 응답 받아서 처리할 때
         const productData = {
           ...response.data,
           liked: response.data.liked,
           likeCount: response.data.likeCount,
-          measurements: response.data.measurements ?? [
-            { label: '어깨', value: '48cm' },
-            { label: '가슴', value: '56cm' },
-            { label: '총장', value: '72cm' },
-            { label: '소매길이', value: '63cm' },
-          ],
+          measurements:
+            response.data.productItems?.length > 0
+              ? formatMeasurementsForAll(response.data.productItems)
+              : [],
         };
 
         setProduct(productData);
@@ -300,30 +341,6 @@ export default function ProductDetailScreen() {
     },
   ];
 
-  const dummyQas = [
-    {
-      id: 1,
-      type: '사이즈',
-      title: 'L 사이즈 있나요?',
-      status: '답변 완료',
-      date: '2025-06-25',
-    },
-    {
-      id: 2,
-      type: '배송',
-      title: '배송 기간은?',
-      status: '답변 대기',
-      date: '2025-06-26',
-    },
-    {
-      id: 3,
-      type: '배송',
-      title: '배송 기간은?',
-      status: '답변 대기',
-      date: '2025-06-26',
-    },
-  ];
-
   return (
     <View style={styles.container}>
       <Header
@@ -395,16 +412,6 @@ export default function ProductDetailScreen() {
 
             <Text style={styles.description}>{product.description}</Text>
 
-            {/* <Text style={styles.sizeTitle}>사이즈</Text>
-
-            <View style={styles.sizeContainer}>
-              {product.size?.map(size => (
-                <View key={size} style={styles.sizeBox}>
-                  <Text style={styles.sizeText}>{size}</Text>
-                </View>
-              ))}
-            </View> */}
-
             <View style={styles.tabContainer}>
               {['info', 'review', 'qa'].map(tab => (
                 <TouchableOpacity
@@ -432,18 +439,22 @@ export default function ProductDetailScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {product.measurements && (
+            {product.measurements && product.measurements.length > 0 && (
               <>
                 <Text style={styles.sizeTitle}>실측 사이즈</Text>
-                <View style={styles.measureContainer}>
-                  {product.measurements.map(measure => (
-                    <View key={measure.label} style={styles.measureRow}>
-                      <Text style={styles.measureLabel}>{measure.label}</Text>
-                      <Text style={styles.measureValue}>{measure.value}</Text>
-                    </View>
-                  ))}
-                </View>
+                {product.measurements.map(measurement => (
+                  <View key={measurement.size} style={styles.measureContainer}>
+                    <Text style={styles.sizeLabel}>
+                      {measurement.size} 사이즈
+                    </Text>
+                    {measurement.values.map(measure => (
+                      <View key={measure.label} style={styles.measureRow}>
+                        <Text style={styles.measureLabel}>{measure.label}</Text>
+                        <Text style={styles.measureValue}>{measure.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
               </>
             )}
 
@@ -485,31 +496,6 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
             )}
           </View>
-
-          {/* 문의 섹션 */}
-          <View onLayout={measureSection('qa')} ref={qaRef}>
-            <View style={styles.qaHeader}>
-              <Text style={styles.sectionTitle}>
-                상품문의 ({dummyQas.length})
-              </Text>
-              {dummyQas.length > 2 && (
-                <TouchableOpacity onPress={() => navigation.navigate('QaList')}>
-                  <Text style={styles.qaMoreText}>더보기</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {dummyQas.slice(0, 2).map(q => (
-              <View key={q.id} style={styles.itemMarginBottom}>
-                <Text style={styles.qaType}>{q.type} 문의</Text>
-                <Text style={styles.qaType}>{q.title}</Text>
-                <View style={styles.qaStatusRow}>
-                  <Text style={[styles.qaStatusText]}>{q.status}</Text>
-                  <Text style={styles.qaDate}>{q.date}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
         </View>
       </ScrollView>
 
@@ -546,7 +532,7 @@ export default function ProductDetailScreen() {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>사이즈 선택</Text>
           <View style={styles.sizeOptionsContainer}>
-            {product?.size.map(size => (
+            {/* {product?.size.map(size => (
               <TouchableOpacity
                 key={size}
                 style={[
@@ -562,6 +548,26 @@ export default function ProductDetailScreen() {
                   ]}
                 >
                   {size}
+                </Text>
+              </TouchableOpacity>
+            ))} */}
+
+            {product?.productItems.map(item => (
+              <TouchableOpacity
+                key={item.size}
+                style={[
+                  styles.sizeOption,
+                  selectedSize === item.size && styles.sizeOptionSelected,
+                ]}
+                onPress={() => setSelectedSize(item.size)}
+              >
+                <Text
+                  style={[
+                    styles.sizeOptionText,
+                    selectedSize === item.size && styles.sizeOptionTextSelected,
+                  ]}
+                >
+                  {item.size}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -618,6 +624,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     height: 400,
+  },
+
+  sizeLabel: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 8,
   },
 
   productImage: {
