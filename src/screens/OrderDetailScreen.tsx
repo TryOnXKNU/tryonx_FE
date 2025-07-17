@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
@@ -25,6 +26,7 @@ type OrderItem = {
   quantity: number;
   size: 'XS' | 'S' | 'M' | 'L' | 'XL';
   discountRate: string;
+  imgUrl: string;
 };
 
 type MemberInfo = {
@@ -36,6 +38,7 @@ type MemberInfo = {
 
 type OrderDetail = {
   orderId: number;
+  orderNum: string;
   memberInfo: MemberInfo;
   totalAmount: number;
   discountAmount: number;
@@ -52,6 +55,7 @@ export default function OrderDetailScreen({ route }: Props) {
   const { orderId } = route.params;
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const SERVER_URL = 'http://localhost:8080';
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -113,7 +117,7 @@ export default function OrderDetailScreen({ route }: Props) {
         {/* 주문자 정보 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{formatDate(order.orderedAt)}</Text>
-          <Text style={styles.simpleInfo}>{orderId}</Text>
+          <Text style={styles.simpleInfo}>{order.orderNum}</Text>
         </View>
 
         {/* 주문자 정보 */}
@@ -138,10 +142,21 @@ export default function OrderDetailScreen({ route }: Props) {
           <View style={styles.productRow}>
             {/* 왼쪽 이미지 */}
             <View style={styles.imageBox}>
-              {/* 실제 이미지가 있다면 <Image source={{ uri: imageUrl }} style={styles.image} /> */}
-              <View style={styles.imagePlaceholder}>
-                <Text>이미지</Text>
-              </View>
+              {firstItem.imgUrl ? (
+                <Image
+                  source={{
+                    uri: firstItem.imgUrl.startsWith('http')
+                      ? firstItem.imgUrl
+                      : `${SERVER_URL}${firstItem.imgUrl}`,
+                  }}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Text>이미지</Text>
+                </View>
+              )}
             </View>
 
             {/* 오른쪽 상품 정보 */}
@@ -250,7 +265,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#eee',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -304,5 +319,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     color: '#111',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
 });
