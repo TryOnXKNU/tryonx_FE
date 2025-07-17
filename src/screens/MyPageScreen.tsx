@@ -30,6 +30,8 @@ export default function MyPageScreen() {
   const [height, setHeight] = useState();
   const [weight, setWeight] = useState();
 
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
   const handleEditProfile = () => {
     navigation.navigate('EditProfile');
   };
@@ -58,17 +60,29 @@ export default function MyPageScreen() {
     }
 
     if (!isFocused) return;
+    const SERVER_URL = 'http://localhost:8080';
 
     const fetchUserInfo = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/v1/users', {
+        const userRes = await axios.get(`${SERVER_URL}/api/v1/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (response.status === 200) {
-          const me = response.data;
+        if (userRes.status === 200) {
+          const me = userRes.data;
           setUserName(me.nickname);
           setHeight(me.height);
           setWeight(me.weight);
+        }
+
+        const profileRes = await axios.get(
+          `${SERVER_URL}/api/v1/users/profile-image`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        if (profileRes.status === 200 && profileRes.data) {
+          // profileRes.data가 "/upload/profile/xxx.jpg" 형태
+          setProfileImage(`${SERVER_URL}${profileRes.data}`);
         }
       } catch (error) {
         console.error('유저 정보 가져오기 실패:', error);
@@ -90,7 +104,9 @@ export default function MyPageScreen() {
         <View style={styles.profileCard}>
           <TouchableOpacity onPress={handleEditProfileImage}>
             <Image
-              source={{ uri: 'https://picsum.photos/50' }}
+              source={{
+                uri: profileImage ?? '../assets/images/logo.png', // 프로필 이미지 없으면 기본 이미지
+              }}
               style={styles.avatar}
             />
           </TouchableOpacity>

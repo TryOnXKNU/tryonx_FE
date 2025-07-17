@@ -8,25 +8,49 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Pressable,
 } from 'react-native';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
+import { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/types';
 
 const SERVER_URL = 'http://localhost:8080';
 
+type NavigationProp = StackNavigationProp<RootStackParamList, 'ProductDetail'>;
+
 type Review = {
   reviewId: number;
+  productId: number;
   productName: string;
   size: string;
   description: string;
+  rating: number;
   createdAt: string;
   productImage: string;
   reviewImages: string[];
 };
 
+const StarRating = ({ rating }: { rating: number }) => {
+  const maxStars = 5;
+  return (
+    <View style={styles.starRow}>
+      {Array.from({ length: maxStars }).map((_, i) => (
+        <Text key={i} style={i < rating ? styles.starFilled : styles.starEmpty}>
+          ★
+        </Text>
+      ))}
+    </View>
+  );
+};
+
 export default function MyReviewListScreen() {
   const { token } = useAuthStore();
+
+  const navigation = useNavigation<NavigationProp>();
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -47,11 +71,19 @@ export default function MyReviewListScreen() {
     fetchReviews();
   }, [token]);
 
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(
+      2,
+      '0',
+    )}.${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const deleteReview = async (reviewId: number) => {
     try {
       await axios.delete(`${SERVER_URL}/api/v1/reviews`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { reviewId }, // body에 포함됨
+        data: { reviewId },
       });
       setReviews(prev => prev.filter(review => review.reviewId !== reviewId));
     } catch (error) {
@@ -61,33 +93,30 @@ export default function MyReviewListScreen() {
 
   const renderReviewItem = ({ item }: { item: Review }) => (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
+      <View style={styles.headerRow}>
         <View style={styles.productRow}>
-          <Image
-            source={{ uri: `${SERVER_URL}${item.productImage}` }}
-            style={styles.productImage}
-          />
+          <Pressable
+            onPress={() =>
+              navigation.navigate('ProductDetail', {
+                productId: item.productId,
+              })
+            }
+          >
+            <Image
+              source={{ uri: `${SERVER_URL}${item.productImage}` }}
+              style={styles.productImage}
+            />
+          </Pressable>
           <View style={styles.productInfo}>
             <Text style={styles.productName}>
               {item.productName} / {item.size}
             </Text>
-            <Text style={styles.date}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
+            <StarRating rating={item.rating} />
+            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
           </View>
         </View>
-        <Text style={styles.description}>{item.description}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {item.reviewImages.map((img, idx) => (
-            <Image
-              key={idx}
-              source={{ uri: `${SERVER_URL}${img}` }}
-              style={styles.reviewImage}
-            />
-          ))}
-        </ScrollView>
-        <Text
-          style={styles.deleteButton}
+
+        <Pressable
           onPress={() =>
             Alert.alert('리뷰 삭제', '정말 삭제하시겠습니까?', [
               { text: '취소', style: 'cancel' },
@@ -98,10 +127,22 @@ export default function MyReviewListScreen() {
               },
             ])
           }
+          style={styles.deleteButton}
         >
-          삭제
-        </Text>
+          <Text style={styles.deleteButtonText}>삭제</Text>
+        </Pressable>
       </View>
+
+      <Text style={styles.description}>{item.description}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {item.reviewImages.map((img, idx) => (
+          <Image
+            key={idx}
+            source={{ uri: `${SERVER_URL}${img}` }}
+            style={styles.reviewImage}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 
@@ -129,10 +170,6 @@ export default function MyReviewListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  cardHeader: {
-    paddingBottom: 8,
-  },
-
   list: { padding: 16 },
   loader: { marginTop: 32 },
   card: {
@@ -143,7 +180,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#fafafa',
   },
-  productRow: { flexDirection: 'row', marginBottom: 10 },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  productRow: { flexDirection: 'row', flex: 1 },
   productImage: {
     width: 80,
     height: 80,
@@ -152,8 +193,8 @@ const styles = StyleSheet.create({
   },
   productInfo: { flex: 1, justifyContent: 'center' },
   productName: { fontWeight: '700', fontSize: 16, marginBottom: 4 },
-  date: { fontSize: 12, color: '#999' },
-  description: { fontSize: 14, marginBottom: 8 },
+  date: { fontSize: 12, color: '#999', marginTop: 5 },
+  description: { fontSize: 14, marginVertical: 8 },
   reviewImage: {
     width: 100,
     height: 100,
@@ -162,13 +203,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
   },
   deleteButton: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    color: '#d00',
-    fontSize: 13,
-    fontWeight: '500',
+    paddingHorizontal: 10,
+    paddingTop: 5,
   },
-  //리뷰 없을 경우
+  deleteButtonText: {
+    fontSize: 14,
+    color: '#d00',
+    fontWeight: 'bold',
+  },
+  starRow: { flexDirection: 'row' },
+  starFilled: { fontSize: 16, color: '#FFD700' },
+  starEmpty: { fontSize: 16, color: '#ccc' },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

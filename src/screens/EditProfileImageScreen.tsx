@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
@@ -22,6 +21,31 @@ export default function EditProfileImageScreen() {
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageData, setImageData] = useState<any>(null); // 업로드용 데이터 저장
+
+  const fetchProfileImage = React.useCallback(async () => {
+    try {
+      const res = await axios.get(`${SERVER_URL}/api/v1/users/profile-image`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('프로필 이미지 응답:', res.data);
+      if (res.status === 200 && res.data) {
+        const fullUrl = `${SERVER_URL}${
+          res.data
+        }?timestamp=${new Date().getTime()}`;
+        console.log('전체 이미지 URL:', fullUrl);
+        setImageUri(fullUrl);
+      } else {
+        setImageUri(null); // 이미지 없으면 기본 이미지 보여주도록
+      }
+    } catch (e) {
+      console.error('프로필 이미지 불러오기 실패:', e);
+      setImageUri(null);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchProfileImage();
+  }, [fetchProfileImage]);
 
   const handlePickImage = () => {
     launchImageLibrary(
@@ -60,12 +84,6 @@ export default function EditProfileImageScreen() {
 
     const formData = new FormData();
 
-    // iOS와 Android uri 차이 처리 (Android uri는 file:// 포함)
-    let uri = imageData.uri;
-    if (Platform.OS === 'ios' && uri?.startsWith('file://')) {
-      uri = uri.substring(7);
-    }
-
     formData.append('profileImage', {
       uri: imageData.uri,
       name: imageData.fileName || 'profile.jpg',
@@ -81,6 +99,9 @@ export default function EditProfileImageScreen() {
       });
 
       Alert.alert('성공', '프로필 이미지가 성공적으로 업데이트되었습니다.');
+
+      // 저장 성공 후 서버에서 최신 프로필 이미지 주소 받아오기
+      await fetchProfileImage();
     } catch (error) {
       console.error('프로필 이미지 업로드 실패:', error);
       Alert.alert('실패', '프로필 이미지 업로드에 실패했습니다.');
