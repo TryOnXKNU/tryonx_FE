@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -36,7 +36,7 @@ export default function AskFormScreen() {
   const { token } = useAuthStore();
   const navigation = useNavigation();
   const route = useRoute<AskFormRouteProp>();
-  const { productName, size, orderItemId = 1, imgUrl } = route.params;
+  const { productName, size, orderItemId, imgUrl } = route.params;
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -44,6 +44,17 @@ export default function AskFormScreen() {
   const fullImageUrl = imgUrl?.startsWith('http')
     ? imgUrl
     : `${SERVER_URL}${imgUrl}`;
+
+  // orderItemId가 제대로 들어오는지 바로 확인
+  useEffect(() => {
+    console.log('orderItemId:', orderItemId);
+    if (!orderItemId) {
+      Alert.alert(
+        '경고',
+        'orderItemId가 없습니다. 문의가 정상 처리되지 않을 수 있습니다.',
+      );
+    }
+  }, [orderItemId]);
 
   const pickImages = () => {
     ImagePicker.launchImageLibrary(
@@ -65,20 +76,10 @@ export default function AskFormScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!title && !content) {
+    if (!title || !content) {
       Alert.alert('알림', '제목과 내용을 모두 입력해주세요.');
       return;
     }
-    if (!title) {
-      Alert.alert('알림', '제목을 입력해주세요.');
-      return;
-    }
-    if (!content) {
-      Alert.alert('알림', '문의 내용을 입력해주세요.');
-      return;
-    }
-
-    const formData = new FormData();
 
     const dto = {
       orderItemId,
@@ -86,17 +87,24 @@ export default function AskFormScreen() {
       content,
     };
 
+    const formData = new FormData();
+
+    // dto를 JSON 문자열로 보내기
     formData.append('dto', {
-      uri: 'dto.json',
-      name: 'dto.json',
-      type: 'application/json',
-      // @ts-ignore
       string: JSON.stringify(dto),
+      name: 'dto',
+      type: 'application/json',
     } as any);
 
     images.forEach((image, idx) => {
+      if (!image.uri) return;
+
+      const uri = image.uri.startsWith('file://')
+        ? image.uri
+        : `file://${image.uri}`;
+
       formData.append('images', {
-        uri: image.uri,
+        uri,
         type: image.type ?? 'image/jpeg',
         name: image.fileName ?? `image${idx}.jpg`,
       } as any);
@@ -106,14 +114,15 @@ export default function AskFormScreen() {
       await axios.post(`${SERVER_URL}/api/v1/ask`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
+          // Content-Type는 생략하는 게 좋아요. axios가 자동 설정합니다.
         },
       });
 
       Alert.alert('성공', '문의가 등록되었습니다.', [
         { text: '확인', onPress: () => navigation.goBack() },
       ]);
-    } catch (err) {
-      console.error(err);
+    } catch (error: any) {
+      console.error('문의 등록 실패:', error.response?.data || error.message);
       Alert.alert('오류', '문의 등록 중 문제가 발생했습니다.');
     }
   };

@@ -152,7 +152,10 @@ HeaderProps) {
               <Icon name="notifications-outline" size={24} color="black" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.iconSpacing}>
+            <TouchableOpacity
+              style={styles.iconSpacing}
+              onPress={() => navigation.navigate('Cart')}
+            >
               <Icon name="cart-outline" size={24} color="black" />
             </TouchableOpacity>
           </View>

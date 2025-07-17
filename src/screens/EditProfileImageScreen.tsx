@@ -6,15 +6,22 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
 import { launchImageLibrary } from 'react-native-image-picker';
+import axios from 'axios';
+import { useAuthStore } from '../store/useAuthStore'; // 토큰 불러오기
+
+const SERVER_URL = 'http://localhost:8080';
 
 export default function EditProfileImageScreen() {
   const originalImageUri = require('../assets/images/logo.png');
+  const { token } = useAuthStore();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<any>(null); // 업로드용 데이터 저장
 
   const handlePickImage = () => {
     launchImageLibrary(
@@ -37,20 +44,47 @@ export default function EditProfileImageScreen() {
           return;
         }
         if (response.assets && response.assets.length > 0) {
-          setImageUri(response.assets[0].uri || null);
+          const asset = response.assets[0];
+          setImageUri(asset.uri || null);
+          setImageData(asset);
         }
       },
     );
   };
 
-  const handleSave = () => {
-    if (!imageUri) {
+  const handleSave = async () => {
+    if (!imageUri || !imageData) {
       Alert.alert('이미지를 선택해주세요.');
       return;
     }
 
-    // TODO: API 업로드 및 저장 처리
-    Alert.alert('프로필 이미지가 저장되었습니다.');
+    const formData = new FormData();
+
+    // iOS와 Android uri 차이 처리 (Android uri는 file:// 포함)
+    let uri = imageData.uri;
+    if (Platform.OS === 'ios' && uri?.startsWith('file://')) {
+      uri = uri.substring(7);
+    }
+
+    formData.append('profileImage', {
+      uri: imageData.uri,
+      name: imageData.fileName || 'profile.jpg',
+      type: imageData.type || 'image/jpeg',
+    } as any);
+
+    try {
+      await axios.post(`${SERVER_URL}/api/v1/users/profile-image`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      Alert.alert('성공', '프로필 이미지가 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('프로필 이미지 업로드 실패:', error);
+      Alert.alert('실패', '프로필 이미지 업로드에 실패했습니다.');
+    }
   };
 
   return (
@@ -60,9 +94,10 @@ export default function EditProfileImageScreen() {
       <View style={styles.container}>
         <View style={styles.avatarWrapper}>
           <Image
-            source={{ uri: imageUri || originalImageUri }}
+            source={imageUri ? { uri: imageUri } : originalImageUri}
             style={styles.avatar}
           />
+
           <TouchableOpacity
             style={styles.editIconWrapper}
             onPress={handlePickImage}

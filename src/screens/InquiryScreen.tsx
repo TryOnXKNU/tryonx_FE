@@ -44,6 +44,7 @@ export default function InquiryScreen() {
 
 // 문의하기 탭 타입 및 컴포넌트
 type AvailableProduct = {
+  orderItemId: number;
   productName: string;
   size: string;
   imgUrl: string;
@@ -94,6 +95,7 @@ function InquiryListTab() {
       <TouchableOpacity
         onPress={() =>
           navigation.navigate('AskForm', {
+            orderItemId: item.orderItemId,
             productName: item.productName,
             size: item.size,
             imgUrl: item.imgUrl,
@@ -104,7 +106,6 @@ function InquiryListTab() {
       </TouchableOpacity>
     </View>
   );
-
   return (
     <FlatList
       data={products}
@@ -112,7 +113,17 @@ function InquiryListTab() {
         `${item.productName}-${item.size}-${index}`
       }
       renderItem={renderItem}
-      contentContainerStyle={styles.contentPadding}
+      contentContainerStyle={
+        products.length === 0
+          ? [
+              styles.contentPadding,
+              { flex: 1, justifyContent: 'center', alignItems: 'center' },
+            ]
+          : styles.contentPadding
+      }
+      ListEmptyComponent={
+        <Text style={styles.emptyText}>문의 가능한 상품이 없습니다.</Text>
+      }
     />
   );
 }
@@ -294,6 +305,19 @@ function MyInquiriesTab() {
                   {detailMap[item.askId].content}
                 </Text>
 
+                {detailMap[item.askId].imageUrls.length > 0 && (
+                  <View style={styles.imageContainer}>
+                    {detailMap[item.askId].imageUrls.map((imgUrl, idx) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: `${SERVER_URL}${imgUrl}` }}
+                        style={styles.inquiryImage}
+                        resizeMode="contain"
+                      />
+                    ))}
+                  </View>
+                )}
+
                 <Text style={styles.detailText}>
                   <Text style={styles.boldLabel}>답변:</Text>{' '}
                   {detailMap[item.askId].answer || '아직 답변이 없습니다.'}
@@ -472,5 +496,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
+  },
+  //문의 상세 이미지
+  inquiryImage: {
+    width: '100%',
+    height: 200,
+    marginVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+  },
+  imageContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginVertical: 8,
   },
 });
