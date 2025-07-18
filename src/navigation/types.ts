@@ -48,7 +48,7 @@ export type RootStackParamList = {
 
   //리뷰
   ReviewWrite: { orderItemId: number };
-  ReviewList: undefined;
+  ReviewList: { productId: number };
   MyReviewList: undefined;
 
   //문의
@@ -66,3 +66,5 @@ export type RootStackParamList = {
   // 관리자
   ProductAdd: undefined;
 };
+
+// src/types/product.ts

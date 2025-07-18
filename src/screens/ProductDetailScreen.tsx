@@ -39,6 +39,20 @@ type ProductItem = {
   hip: number;
 };
 
+type ProductReview = {
+  memberNickname: string;
+  height: number;
+  weight: number;
+  profileImageUrl: string;
+  rating: number;
+  productId: number;
+  productName: string;
+  size: string;
+  description: string;
+  createdAt: string;
+  reviewImages: string[];
+};
+
 type ProductDetail = {
   productId: number;
   productName: string;
@@ -47,11 +61,9 @@ type ProductDetail = {
   categoryId: number;
   description: string;
   productImages: string[];
+
   size: string[];
-  // measurements?: {
-  //   label: string;
-  //   value: string;
-  // }[];
+
   measurements?: {
     size: string;
     values: {
@@ -62,6 +74,20 @@ type ProductDetail = {
 
   liked?: boolean;
   productItems: ProductItem[];
+  productReviews: ProductReview[];
+};
+
+const StarRating = ({ rating }: { rating: number }) => {
+  const maxStars = 5;
+  return (
+    <View style={styles.starRow}>
+      {Array.from({ length: maxStars }).map((_, i) => (
+        <Text key={i} style={i < rating ? styles.starFilled : styles.starEmpty}>
+          ★
+        </Text>
+      ))}
+    </View>
+  );
 };
 
 export default function ProductDetailScreen() {
@@ -78,6 +104,9 @@ export default function ProductDetailScreen() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // 리뷰 카운트
+  const [reviewCount, setReviewCount] = useState<number>(0);
 
   // 좋아요 토글 상태 관리
   const [liked, setLiked] = useState(false);
@@ -244,6 +273,20 @@ export default function ProductDetailScreen() {
         setProduct(productData);
         setLikeCount(productData.likeCount);
 
+        // 리뷰 카운트
+        try {
+          const reviewCountRes = await axios.get<number>(
+            `${SERVER_URL}/api/v1/reviews/product/count`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              params: { productId },
+            },
+          );
+          setReviewCount(reviewCountRes.data);
+        } catch (err) {
+          console.error('리뷰 개수 불러오기 실패:', err);
+        }
+
         // 좋아요 누른 상품 목록 가져오기
         const likesRes = await axios.get<
           { productId: number; productName: string; imageUrl: string }[]
@@ -315,31 +358,6 @@ export default function ProductDetailScreen() {
       const layout = event.nativeEvent.layout;
       sectionTops.current[section] = layout.y;
     };
-
-  // (중략) dummy 데이터
-  const dummyReviews = [
-    {
-      id: 1,
-      author: '홍길동',
-      rating: 5,
-      content: '정말 좋아요!',
-      date: '2025-07-01',
-    },
-    {
-      id: 2,
-      author: '김철수',
-      rating: 4,
-      content: '사이즈가 조금 작아요',
-      date: '2025-07-02',
-    },
-    {
-      id: 3,
-      author: '김철수',
-      rating: 4,
-      content: '사이즈가 조금 작아요',
-      date: '2025-07-02',
-    },
-  ];
 
   return (
     <View style={styles.container}>
@@ -413,12 +431,10 @@ export default function ProductDetailScreen() {
             <Text style={styles.description}>{product.description}</Text>
 
             <View style={styles.tabContainer}>
-              {['info', 'review', 'qa'].map(tab => (
+              {['info', 'review'].map(tab => (
                 <TouchableOpacity
                   key={tab}
-                  onPress={() =>
-                    scrollToSection(tab as 'info' | 'review' | 'qa')
-                  }
+                  onPress={() => scrollToSection(tab as 'info' | 'review')}
                   style={[
                     styles.tabItem,
                     activeTab === tab && styles.activeTabItem, // 밑줄 색 바꾸는 부분
@@ -430,11 +446,7 @@ export default function ProductDetailScreen() {
                       activeTab === tab && styles.activeTabText, // 글씨 색 바꾸는 부분
                     ]}
                   >
-                    {tab === 'info'
-                      ? '정보'
-                      : tab === 'review'
-                      ? '리뷰'
-                      : '문의'}
+                    {tab === 'info' ? '정보' : '리뷰'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -472,30 +484,41 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* 리뷰 섹션 */}
-          <View onLayout={measureSection('review')} ref={reviewRef}>
-            <Text style={styles.sectionTitle}>
-              리뷰 ({dummyReviews.length})
-            </Text>
+          {product?.productReviews && (
+            <View onLayout={measureSection('review')} ref={reviewRef}>
+              <Text style={styles.sectionTitle}>리뷰 {reviewCount}</Text>
 
-            {dummyReviews.slice(0, 2).map(r => (
-              <View key={r.id} style={styles.itemMarginBottom}>
-                <Text style={styles.reviewAuthor}>
-                  {r.author} ({r.rating}★)
-                </Text>
-                <Text>{r.content}</Text>
-                <Text style={styles.reviewDate}>{r.date}</Text>
-              </View>
-            ))}
+              {product.productReviews.slice(0, 2).map((r, idx) => (
+                <View key={idx} style={styles.itemMarginBottom}>
+                  <View style={styles.reviewRow}>
+                    <Image
+                      source={{ uri: `${SERVER_URL}${r.profileImageUrl}` }}
+                      style={styles.profileImage}
+                    />
+                    <StarRating rating={r.rating} />
+                  </View>
+                  <Text>{r.description}</Text>
+                  <Text style={styles.reviewDate}>
+                    {new Date(r.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))}
 
-            {dummyReviews.length > 2 && (
+              {/* 리뷰 전체 보기 버튼 (검정 배경, 흰글씨) */}
               <TouchableOpacity
-                onPress={() => navigation.navigate('ReviewList')}
+                onPress={() =>
+                  navigation.navigate('ReviewList', {
+                    productId: product.productId,
+                  })
+                }
                 style={styles.reviewAllButton}
               >
-                <Text style={styles.reviewAllButtonText}>리뷰 전체 보기</Text>
+                <Text style={styles.reviewAllButtonText}>
+                  {reviewCount}건 리뷰 전체 보기
+                </Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -517,7 +540,7 @@ export default function ProductDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 3) 구매하기 모달 */}
+      {/* 구매하기 모달 */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -532,26 +555,6 @@ export default function ProductDetailScreen() {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>사이즈 선택</Text>
           <View style={styles.sizeOptionsContainer}>
-            {/* {product?.size.map(size => (
-              <TouchableOpacity
-                key={size}
-                style={[
-                  styles.sizeOption,
-                  selectedSize === size && styles.sizeOptionSelected,
-                ]}
-                onPress={() => setSelectedSize(size)}
-              >
-                <Text
-                  style={[
-                    styles.sizeOptionText,
-                    selectedSize === size && styles.sizeOptionTextSelected,
-                  ]}
-                >
-                  {size}
-                </Text>
-              </TouchableOpacity>
-            ))} */}
-
             {product?.productItems.map(item => (
               <TouchableOpacity
                 key={item.size}
@@ -619,6 +622,11 @@ export default function ProductDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
+  reviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 
   imageScrollView: {
     paddingHorizontal: 16,
@@ -864,55 +872,33 @@ const styles = StyleSheet.create({
   itemMarginBottom: {
     marginBottom: 12,
   },
+
   reviewAuthor: {
-    marginVertical: 10,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   reviewDate: {
-    marginVertical: 10,
     fontSize: 12,
-    color: '#666',
+    color: 'gray',
+    marginTop: 4,
   },
   reviewAllButton: {
-    backgroundColor: '#000',
-    paddingVertical: 12,
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#eee',
+    borderRadius: 4,
     alignItems: 'center',
-    borderRadius: 6,
-    marginTop: 8,
   },
   reviewAllButtonText: {
-    color: '#fff',
+    color: '#333',
     fontWeight: '600',
   },
-
-  // 문의 섹션
-  qaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 12,
-  },
-  qaMoreText: {
-    fontSize: 14,
-    color: '#888',
-  },
-  qaType: {
-    marginVertical: 10,
-    color: '#888',
-    fontWeight: '700',
-  },
-  qaStatusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    color: '#888',
-    marginVertical: 10,
-  },
-  qaStatusText: {
-    color: '#888',
-  },
-  qaDate: {
-    color: '#888',
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: '#eee', // 로딩 전 빈 배경
   },
 
   // 모달
@@ -1026,4 +1012,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  //별점
+  starRow: { flexDirection: 'row', marginBottom: 4 },
+  starFilled: { color: '#f5c518', fontSize: 16 },
+  starEmpty: { color: '#ddd', fontSize: 16 },
 });
