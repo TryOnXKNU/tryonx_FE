@@ -67,10 +67,12 @@ export type RootStackParamList = {
   // 교환 요청
   ExchangeRequest: { orderId: number; orderItemId: number };
   ExchangeList: undefined;
+  ExchangeDetail: { exchangeId: number };
 
   // 반품 요청
   ReturnRequest: { orderId: number; orderItemId: number };
   ReturnList: undefined;
+  ReturnDetail: { returnId: number };
 
   // ReviewList: { productId: number };
   // QaList: { productId: number };

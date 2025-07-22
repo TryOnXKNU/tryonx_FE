@@ -1,14 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 import Header from '../components/Header';
+import { RootStackParamList } from '../navigation/types';
+import type { NavigationProp } from '@react-navigation/native';
 
 type ReturnItem = {
   returnId: number;
   memberId: number;
   orderId: number;
   orderItemId: number;
+  productName: string;
+  productImageUrl: string;
   price: number;
   quantity: number;
   reason: string;
@@ -20,6 +33,7 @@ type ReturnItem = {
 export default function ReturnListScreen() {
   const [returnList, setReturnList] = useState<ReturnItem[]>([]);
   const { token } = useAuthStore();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     const fetchReturnList = async () => {
@@ -102,16 +116,26 @@ export default function ReturnListScreen() {
                   {getStatusText(item.status)}
                 </Text>
               </View>
-              <Text style={styles.label}>주문 정보</Text>
-              <Text style={styles.text}>주문 ID: {item.orderId}</Text>
-              <Text style={styles.text}>주문 상품 ID: {item.orderItemId}</Text>
 
-              <Text style={styles.label}>상품 정보</Text>
-              <Text style={styles.text}>수량: {item.quantity}개</Text>
-              <Text style={styles.price}>
-                금액: {item.price.toLocaleString()}원
-              </Text>
+              {/* 상품 정보: 이미지 + 이름 + 주문 상품 ID + 가격/개수 */}
+              <View style={styles.productRow}>
+                <Image
+                  source={{ uri: item.productImageUrl }}
+                  style={styles.productImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName}>{item.productName}</Text>
+                  <Text style={styles.text}>
+                    주문 상품 ID: {item.orderItemId}
+                  </Text>
+                  <Text style={styles.priceQuantityText}>
+                    {item.price.toLocaleString()}원 / {item.quantity}개
+                  </Text>
+                </View>
+              </View>
 
+              {/* 사유 */}
               <Text style={styles.label}>사유</Text>
               <Text style={styles.reason}>{item.reason}</Text>
 
@@ -120,6 +144,18 @@ export default function ReturnListScreen() {
                   처리일: {formatDate(item.returnApprovedAt)}
                 </Text>
               )}
+
+              {/* 상세보기 버튼 */}
+              <TouchableOpacity
+                style={styles.detailButton}
+                onPress={() =>
+                  navigation.navigate('ReturnDetail', {
+                    returnId: item.returnId,
+                  })
+                }
+              >
+                <Text style={styles.detailButtonText}>반품 신청 상세보기</Text>
+              </TouchableOpacity>
             </View>
           ))
         )}
@@ -193,5 +229,53 @@ const styles = StyleSheet.create({
     marginTop: 80,
     fontSize: 16,
     color: '#aaa',
+  },
+  detailButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+    backgroundColor: '#000',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
+
+  detailButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  productImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#eee',
+    resizeMode: 'contain',
+  },
+
+  priceQuantityText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 4,
+  },
+
+  productInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+
+  productName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 4,
   },
 });

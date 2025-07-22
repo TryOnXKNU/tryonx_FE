@@ -30,9 +30,11 @@ import CartScreen from '../screens/CartScreen';
 
 import ExchangeRequestScreen from '../screens/ExchangeRequestScreen';
 import ExchangeListScreen from '../screens/ExchangeListScreen';
+import ExchangeDetailScreen from '../screens/ExchangeDetailScreen';
 
 import ReturnRequestScreen from '../screens/ReturnRequestScreen';
 import ReturnListScreen from '../screens/ReturnListScreen';
+import ReturnDetailScreen from '../screens/ReturnDetailScreen';
 
 // 관리자
 import ProductAddScreen from '../screens/admin/ProductAddScreen';
@@ -67,9 +69,11 @@ export default function MainStack() {
 
       <Stack.Screen name="ExchangeRequest" component={ExchangeRequestScreen} />
       <Stack.Screen name="ExchangeList" component={ExchangeListScreen} />
+      <Stack.Screen name="ExchangeDetail" component={ExchangeDetailScreen} />
 
       <Stack.Screen name="ReturnRequest" component={ReturnRequestScreen} />
       <Stack.Screen name="ReturnList" component={ReturnListScreen} />
+      <Stack.Screen name="ReturnDetail" component={ReturnDetailScreen} />
 
       <Stack.Screen name="Cart" component={CartScreen} />
       {/* 관리자 */}
