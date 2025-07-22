@@ -26,6 +26,10 @@ export type RootStackParamList = {
 
   //알림
   Notification: undefined;
+
+  //최근 본 상품
+  RecentItem: undefined;
+
   //카테고리
   CategoryList: { selectedCategory: string };
 
@@ -60,11 +64,17 @@ export type RootStackParamList = {
     imgUrl?: string;
   };
 
+  // 교환 요청
+  ExchangeRequest: { orderId: number; orderItemId: number };
+  ExchangeList: undefined;
+
+  // 반품 요청
+  ReturnRequest: { orderId: number; orderItemId: number };
+  ReturnList: undefined;
+
   // ReviewList: { productId: number };
   // QaList: { productId: number };
 
   // 관리자
   ProductAdd: undefined;
 };
-
-// src/types/product.ts

@@ -24,8 +24,15 @@ import InquiryScreen from '../screens/InquiryScreen';
 
 import ReviewWriteScreen from '../screens/ReviewWriteScreen';
 import MyReviewListScreen from '../screens/MyReviewListScreen';
+import RecentItemScreen from '../screens/RecentItemScreen';
 
 import CartScreen from '../screens/CartScreen';
+
+import ExchangeRequestScreen from '../screens/ExchangeRequestScreen';
+import ExchangeListScreen from '../screens/ExchangeListScreen';
+
+import ReturnRequestScreen from '../screens/ReturnRequestScreen';
+import ReturnListScreen from '../screens/ReturnListScreen';
 
 // 관리자
 import ProductAddScreen from '../screens/admin/ProductAddScreen';
@@ -54,9 +61,15 @@ export default function MainStack() {
       <Stack.Screen name="OrderComplete" component={OrderCompleteScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
-
       <Stack.Screen name="ReviewWrite" component={ReviewWriteScreen} />
       <Stack.Screen name="MyReviewList" component={MyReviewListScreen} />
+      <Stack.Screen name="RecentItem" component={RecentItemScreen} />
+
+      <Stack.Screen name="ExchangeRequest" component={ExchangeRequestScreen} />
+      <Stack.Screen name="ExchangeList" component={ExchangeListScreen} />
+
+      <Stack.Screen name="ReturnRequest" component={ReturnRequestScreen} />
+      <Stack.Screen name="ReturnList" component={ReturnListScreen} />
 
       <Stack.Screen name="Cart" component={CartScreen} />
       {/* 관리자 */}

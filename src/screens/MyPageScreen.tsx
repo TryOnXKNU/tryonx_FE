@@ -32,6 +32,12 @@ export default function MyPageScreen() {
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
+  // 주문 내역 숫자 상태
+  const [orders, setOrders] = useState<number | undefined>();
+
+  // 리뷰 내역 숫자 상태
+  const [reviews, setReviews] = useState<number | undefined>();
+
   const handleEditProfile = () => {
     navigation.navigate('EditProfile');
   };
@@ -89,12 +95,40 @@ export default function MyPageScreen() {
       }
     };
 
+    const fetchOrderCount = async () => {
+      try {
+        const res = await axios.get(`${SERVER_URL}/api/v1/order/my/count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 200) {
+          setOrders(res.data); // 숫자 응답
+        }
+      } catch (error) {
+        console.error('주문 개수 가져오기 실패:', error);
+      }
+    };
+
+    const fetchReviewCount = async () => {
+      try {
+        const res = await axios.get(`${SERVER_URL}/api/v1/reviews/my/count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 200) {
+          setReviews(res.data); // ← 리뷰 개수는 reviews에 저장!
+        }
+      } catch (error) {
+        console.error('리뷰 개수 가져오기 실패:', error);
+      }
+    };
+
     fetchUserInfo();
+    fetchOrderCount();
+    fetchReviewCount();
   }, [token, navigation, isFocused]);
 
   const points = 1500;
-  const orders = 2;
-  const reviews = 0;
 
   return (
     <View style={styles.safeArea}>
@@ -127,29 +161,49 @@ export default function MyPageScreen() {
 
         <View style={styles.quickRow}>
           <QuickButton label="적립금" icon="wallet-outline" count={points} />
-          <QuickButton label="주문내역" icon="cube-outline" count={orders} />
+          <QuickButton
+            label="주문"
+            icon="cube-outline"
+            count={orders}
+            onPress={() => navigation.navigate('MyOrderList')}
+          />
           <QuickButton
             label="리뷰"
             icon="chatbubble-ellipses-outline"
             count={reviews}
+            onPress={() => navigation.navigate('MyReviewList')}
           />
         </View>
 
         <View style={styles.menuList}>
-          <MenuItem label="최근 본 상품" />
           <MenuItem
+            label="최근 본 상품"
+            onPress={() => navigation.navigate('RecentItem')}
+          />
+
+          {/* <MenuItem
             label="주문내역"
             onPress={() => navigation.navigate('MyOrderList')}
-          />
+          /> */}
 
           <MenuItem
             label="문의내역"
             onPress={() => navigation.navigate('Inquiry')}
           />
-
+          {/* 
           <MenuItem
             label="리뷰내역"
             onPress={() => navigation.navigate('MyReviewList')}
+          /> */}
+
+          <MenuItem
+            label="교환 내역"
+            onPress={() => navigation.navigate('ExchangeList')}
+          />
+
+          <MenuItem
+            label="반품 내역"
+            onPress={() => navigation.navigate('ReturnList')}
           />
         </View>
 
@@ -170,13 +224,15 @@ function QuickButton({
   label,
   icon,
   count,
+  onPress,
 }: {
   label: string;
   icon: string;
   count?: number;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.quickButton}>
+    <TouchableOpacity style={styles.quickButton} onPress={onPress}>
       <Icon name={icon} size={24} color="#000" />
       <Text style={styles.quickText}>{label}</Text>
       <Text style={styles.quickCount}>{count ?? 0}</Text>
@@ -237,6 +293,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     marginRight: 16,
+    backgroundColor: '#ccc',
   },
   nickname: {
     fontSize: 18,
