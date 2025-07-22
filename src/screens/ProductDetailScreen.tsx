@@ -21,6 +21,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { RootStackParamList } from '../navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { saveRecentItem } from '../utils/recentStorage';
+
 const SERVER_URL = 'http://localhost:8080';
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
@@ -99,6 +101,7 @@ export default function ProductDetailScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +123,9 @@ export default function ProductDetailScreen() {
   // 2) 사이즈 선택 상태, 수량 상태 추가
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
+
+  // 장바구니 담은 뒤 모달
+  const [showCartModal, setShowCartModal] = useState(false);
 
   // 상세 탭
   const [activeTab, setActiveTab] = useState<'info' | 'review' | 'qa'>('info');
@@ -215,14 +221,38 @@ export default function ProductDetailScreen() {
   };
 
   // 장바구니 버튼 눌렀을 때 (임시 alert 처리)
-  const handleAddToCart = () => {
-    if (!selectedSize) {
+  const handleAddToCart = async () => {
+    if (!selectedSize || !product) {
       Alert.alert('사이즈를 선택해 주세요.');
       return;
     }
 
-    Alert.alert('장바구니에 추가되었습니다.');
-    setModalVisible(false);
+    try {
+      await axios.post(
+        `${SERVER_URL}/api/v1/cart`,
+        {
+          items: [
+            {
+              productId: product.productId,
+              size: selectedSize,
+              quantity,
+            },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      // 장바구니 성공 시 모달 열기
+      setShowCartModal(true);
+      setModalVisible(false);
+    } catch (cartError) {
+      console.error('장바구니 추가 실패:', cartError);
+      Alert.alert('장바구니 추가 실패', '다시 시도해 주세요.');
+    }
   };
 
   // 각 productItem별로 측정값 배열 생성
@@ -309,6 +339,24 @@ export default function ProductDetailScreen() {
 
     fetchProductDetail();
   }, [productId, token]);
+
+  // 최근 본 상품 저장
+  useEffect(() => {
+    if (
+      product?.productId &&
+      product?.productName &&
+      product?.productImages &&
+      product.productImages.length > 0 &&
+      product?.productPrice
+    ) {
+      saveRecentItem({
+        id: String(product.productId),
+        name: product.productName,
+        imageUrl: getImageUrl(product.productImages[0]),
+        price: product.productPrice,
+      });
+    }
+  }, [product]);
 
   const getImageUrl = (url: string) => {
     if (url.startsWith('http')) return url;
@@ -611,6 +659,47 @@ export default function ProductDetailScreen() {
                 style={[styles.modalButtonText, styles.modalButtonTextWhite]}
               >
                 구매하기
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showCartModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowCartModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowCartModal(false)}
+        />
+        <View style={styles.cartSuccessModal}>
+          <Text style={styles.cartSuccessText}>
+            장바구니에 상품을 담았어요!
+          </Text>
+          <View style={styles.cartSuccessButtons}>
+            <TouchableOpacity
+              style={styles.cartModalButton}
+              onPress={() => setShowCartModal(false)}
+            >
+              <Text style={styles.cartModalButtonText}>계속 쇼핑하기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cartModalButton, styles.cartModalButtonGo]}
+              onPress={() => {
+                setShowCartModal(false);
+                navigation.navigate('Cart');
+              }}
+            >
+              <Text
+                style={[
+                  styles.cartModalButtonText,
+                  styles.cartModalButtonTextWhite,
+                ]}
+              >
+                장바구니 보러가기
               </Text>
             </TouchableOpacity>
           </View>
@@ -1012,6 +1101,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+
+  //장바 모달
+  cartSuccessModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 10,
+    alignItems: 'center',
+  },
+
+  cartSuccessText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+
+  cartSuccessButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
+  cartModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    alignItems: 'center',
+  },
+
+  cartModalButtonGo: {
+    backgroundColor: '#e74c3c',
+    borderColor: '#e74c3c',
+  },
+
+  cartModalButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+  },
+  cartModalButtonTextWhite: {
+    color: '#fff',
+  },
+
   //별점
   starRow: { flexDirection: 'row', marginBottom: 4 },
   starFilled: { color: '#f5c518', fontSize: 16 },

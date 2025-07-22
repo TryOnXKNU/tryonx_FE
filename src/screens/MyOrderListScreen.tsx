@@ -77,12 +77,12 @@ export default function MyOrderListScreen() {
     navigation.navigate('ReviewWrite', { orderItemId });
   };
 
-  const handleReturnRequest = (_orderId: string) => {
-    Alert.alert('반품 요청 기능은 준비 중입니다.');
+  const handleReturnRequest = (orderId: number, orderItemId: number) => {
+    navigation.navigate('ReturnRequest', { orderId, orderItemId });
   };
 
-  const handleExchangeRequest = (_orderId: string) => {
-    Alert.alert('교환 요청 기능은 준비 중입니다.');
+  const handleExchangeRequest = (orderId: number, orderItemId: number) => {
+    navigation.navigate('ExchangeRequest', { orderId, orderItemId });
   };
 
   const handleDetail = (orderId: string) => {
@@ -166,19 +166,22 @@ export default function MyOrderListScreen() {
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.reorderBtn]}
                     onPress={() =>
-                      handleReturnRequest(order.orderId.toString())
+                      handleReturnRequest(order.orderId, firstItem.orderItemId)
                     }
                   >
-                    <Text style={styles.reorderBtnText}>반품 요청</Text>
+                    <Text style={styles.reorderBtnText}>반품 신청</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.reviewBtn]}
                     onPress={() =>
-                      handleExchangeRequest(order.orderId.toString())
+                      handleExchangeRequest(
+                        order.orderId,
+                        firstItem.orderItemId,
+                      )
                     }
                   >
-                    <Text style={styles.reviewBtnText}>교환 요청</Text>
+                    <Text style={styles.reviewBtnText}>교환 신청</Text>
                   </TouchableOpacity>
                 </View>
               </View>
