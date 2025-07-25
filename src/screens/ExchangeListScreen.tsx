@@ -71,7 +71,7 @@ export default function ExchangeListScreen() {
           styles.statusBadge,
           { backgroundColor: '#ffe599', color: '#7a5901' },
         ];
-      case 'APPROVED':
+      case 'ACCEPTED':
         return [
           styles.statusBadge,
           { backgroundColor: '#b6d7a8', color: '#274e13' },
@@ -80,6 +80,16 @@ export default function ExchangeListScreen() {
         return [
           styles.statusBadge,
           { backgroundColor: '#f4cccc', color: '#990000' },
+        ];
+      case 'COLLECTING':
+        return [
+          styles.statusBadge,
+          { backgroundColor: '#a4f4edff', color: '#086b69ff' },
+        ];
+      case 'COMPLETED':
+        return [
+          styles.statusBadge,
+          { backgroundColor: '#a4c2f4', color: '#08306b' },
         ];
       default:
         return [styles.statusBadge, { backgroundColor: '#ccc', color: '#666' }];
@@ -90,10 +100,14 @@ export default function ExchangeListScreen() {
     switch (status) {
       case 'REQUESTED':
         return '요청 완료';
-      case 'APPROVED':
-        return '승인됨';
+      case 'ACCEPTED':
+        return '접수 완료';
       case 'REJECTED':
-        return '거절됨';
+        return '반려';
+      case 'COLLECTING':
+        return '상품 회수중';
+      case 'COMPLETED':
+        return '교환 완료';
       default:
         return status;
     }
@@ -121,10 +135,13 @@ export default function ExchangeListScreen() {
               {/* 상품 정보: 이미지 + 이름 + 주문 상품 ID + 가격/개수 */}
               <View style={styles.productRow}>
                 <Image
-                  source={{ uri: exchange.productImageUrl }}
+                  source={{
+                    uri: `http://localhost:8080${exchange.productImageUrl}`,
+                  }}
                   style={styles.productImage}
                   resizeMode="cover"
                 />
+
                 <View style={styles.productInfo}>
                   <Text style={styles.productName}>{exchange.productName}</Text>
                   <Text style={styles.text}>

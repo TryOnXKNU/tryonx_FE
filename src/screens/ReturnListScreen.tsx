@@ -71,7 +71,7 @@ export default function ReturnListScreen() {
           styles.statusBadge,
           { backgroundColor: '#ffe599', color: '#7a5901' },
         ];
-      case 'APPROVED':
+      case 'ACCEPTED':
         return [
           styles.statusBadge,
           { backgroundColor: '#b6d7a8', color: '#274e13' },
@@ -80,6 +80,16 @@ export default function ReturnListScreen() {
         return [
           styles.statusBadge,
           { backgroundColor: '#f4cccc', color: '#990000' },
+        ];
+      case 'COLLECTING':
+        return [
+          styles.statusBadge,
+          { backgroundColor: '#a4f4edff', color: '#086b69ff' },
+        ];
+      case 'COMPLETED':
+        return [
+          styles.statusBadge,
+          { backgroundColor: '#a4c2f4', color: '#08306b' },
         ];
       default:
         return [styles.statusBadge, { backgroundColor: '#ccc' }];
@@ -90,10 +100,14 @@ export default function ReturnListScreen() {
     switch (status) {
       case 'REQUESTED':
         return '요청 완료';
-      case 'APPROVED':
-        return '승인됨';
+      case 'ACCEPTED':
+        return '접수 완료';
       case 'REJECTED':
-        return '거절됨';
+        return '반려';
+      case 'COLLECTING':
+        return '상품 회수중';
+      case 'COMPLETED':
+        return '반품 완료';
       default:
         return status;
     }
@@ -120,10 +134,13 @@ export default function ReturnListScreen() {
               {/* 상품 정보: 이미지 + 이름 + 주문 상품 ID + 가격/개수 */}
               <View style={styles.productRow}>
                 <Image
-                  source={{ uri: item.productImageUrl }}
+                  source={{
+                    uri: `http://localhost:8080${item.productImageUrl}`,
+                  }}
                   style={styles.productImage}
                   resizeMode="cover"
                 />
+
                 <View style={styles.productInfo}>
                   <Text style={styles.productName}>{item.productName}</Text>
                   <Text style={styles.text}>

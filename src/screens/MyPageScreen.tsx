@@ -51,8 +51,34 @@ export default function MyPageScreen() {
     Alert.alert('로그아웃 되었습니다.');
   };
 
-  const handleWithdraw = () => {
-    Alert.alert('회원탈퇴 처리되었습니다.');
+  const SERVER_URL = 'http://localhost:8080';
+
+  // 탈퇴
+  const handleWithdraw = async () => {
+    Alert.alert(
+      '회원탈퇴',
+      '정말로 탈퇴하시겠습니까? 탈퇴 후 계정은 복구할 수 없습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '확인',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await axios.delete(`${SERVER_URL}/api/v1/users/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              Alert.alert('탈퇴 완료', '회원탈퇴가 완료되었습니다.');
+              logout(); // ✅ 여기서 상태를 바꾸면 AppNavigator가 AuthStack으로 전환됨
+            } catch (error) {
+              console.error('회원탈퇴 오류:', error);
+              Alert.alert('오류', '회원탈퇴 중 문제가 발생했습니다.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   useEffect(() => {
@@ -66,7 +92,6 @@ export default function MyPageScreen() {
     }
 
     if (!isFocused) return;
-    const SERVER_URL = 'http://localhost:8080';
 
     const fetchUserInfo = async () => {
       try {
