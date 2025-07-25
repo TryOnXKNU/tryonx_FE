@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 import Header from '../components/Header';
@@ -36,30 +37,68 @@ type Order = {
 
 export default function MyOrderListScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
+
+  // 교환/반품 신청된 orderItemId 목록을 저장
+  const [exchangeList, setExchangeList] = useState<number[]>([]);
+  const [returnList, setReturnList] = useState<number[]>([]);
+
   const { token } = useAuthStore();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const IMAGE_BASE_URL = 'http://localhost:8080';
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get(
-          'http://localhost:8080/api/v1/order/my',
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-        setOrders(response.data);
-      } catch (error) {
-        console.error('주문내역 가져오기 실패:', error);
-        Alert.alert('오류', '주문내역을 불러오지 못했습니다.');
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const [orderRes, exchangeRes, returnRes] = await Promise.all([
+            axios.get('http://localhost:8080/api/v1/order/my', {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get('http://localhost:8080/api/v1/exchange/my', {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get('http://localhost:8080/api/v1/return/my', {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
 
-    fetchOrders();
-  }, [token]);
+          setOrders(orderRes.data);
+
+          // 교환/반품 목록에서 orderItemId만 추출
+          setExchangeList(
+            exchangeRes.data.map((item: any) => item.orderItemId),
+          );
+          setReturnList(returnRes.data.map((item: any) => item.orderItemId));
+        } catch (error) {
+          console.error('데이터 불러오기 실패:', error);
+          Alert.alert('오류', '데이터를 불러오지 못했습니다.');
+        }
+      };
+
+      fetchData();
+    }, [token]),
+  );
+
+  // useEffect(() => {
+  //   const fetchOrders = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         'http://localhost:8080/api/v1/order/my',
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         },
+  //       );
+  //       setOrders(response.data);
+  //     } catch (error) {
+  //       console.error('주문내역 가져오기 실패:', error);
+  //       Alert.alert('오류', '주문내역을 불러오지 못했습니다.');
+  //     }
+  //   };
+
+  //   fetchOrders();
+  // }, [token]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -78,6 +117,13 @@ export default function MyOrderListScreen() {
   };
 
   const handleReturnRequest = (orderId: number, orderItemId: number) => {
+    if (exchangeList.includes(orderItemId)) {
+      Alert.alert(
+        '알림',
+        '이미 교환이 신청된 상품입니다. 반품 신청이 불가합니다.',
+      );
+      return;
+    }
     navigation.navigate('ReturnRequest', { orderId, orderItemId });
   };
 
@@ -113,6 +159,15 @@ export default function MyOrderListScreen() {
           )
           .map(order => {
             const firstItem = order.orderItem[0];
+
+            // 현재 상품에 대해 반품/교환 신청이 이미 됐는지 확인
+            const isReturnRequested = returnList.includes(
+              firstItem.orderItemId,
+            );
+            const isExchangeRequested = exchangeList.includes(
+              firstItem.orderItemId,
+            );
+
             return (
               <View key={order.orderId} style={styles.orderCard}>
                 <Text style={styles.date}>{formatDate(order.orderedAt)}</Text>
@@ -162,27 +217,56 @@ export default function MyOrderListScreen() {
                   </TouchableOpacity>
                 </View>
 
+                {/* 하단 버튼 */}
                 <View style={[styles.actionButtonsRow, styles.bottomButtonRow]}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.reorderBtn]}
-                    onPress={() =>
-                      handleReturnRequest(order.orderId, firstItem.orderItemId)
-                    }
-                  >
-                    <Text style={styles.reorderBtnText}>반품 신청</Text>
-                  </TouchableOpacity>
+                  {/* 반품 버튼: 교환 신청이 된 경우는 렌더하지 않음 */}
+                  {!isExchangeRequested && (
+                    <TouchableOpacity
+                      style={[
+                        styles.actionBtn,
+                        styles.reorderBtn,
+                        isReturnRequested && styles.returnRequestedBtn,
+                      ]}
+                      onPress={() =>
+                        handleReturnRequest(
+                          order.orderId,
+                          firstItem.orderItemId,
+                        )
+                      }
+                      disabled={isReturnRequested}
+                    >
+                      <Text
+                        style={[
+                          styles.reorderBtnText,
+                          isReturnRequested && styles.disabledText,
+                        ]}
+                      >
+                        {isReturnRequested ? '반품 신청 완료' : '반품 신청'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.reviewBtn]}
-                    onPress={() =>
-                      handleExchangeRequest(
-                        order.orderId,
-                        firstItem.orderItemId,
-                      )
-                    }
-                  >
-                    <Text style={styles.reviewBtnText}>교환 신청</Text>
-                  </TouchableOpacity>
+                  {/* 교환 버튼: 반품 신청이 된 경우는 렌더하지 않음 */}
+                  {!isReturnRequested && (
+                    <TouchableOpacity
+                      style={[
+                        styles.actionBtn,
+                        styles.reviewBtn,
+                        isExchangeRequested && styles.exchangeRequestedBtn,
+                      ]}
+                      onPress={() =>
+                        handleExchangeRequest(
+                          order.orderId,
+                          firstItem.orderItemId,
+                        )
+                      }
+                      disabled={isExchangeRequested}
+                    >
+                      <Text style={styles.reviewBtnText}>
+                        {isExchangeRequested ? '교환 신청 완료' : '교환 신청'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
@@ -292,5 +376,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginTop: 50,
+  },
+  disabledText: {
+    color: '#666',
+  },
+  exchangeRequestedBtn: {
+    backgroundColor: '#666',
+  },
+  returnRequestedBtn: {
+    backgroundColor: '#ccc',
+    borderColor: '#ccc',
   },
 });
