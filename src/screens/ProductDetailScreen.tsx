@@ -193,7 +193,7 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // 기존 handleBuy 함수 수정 -> 모달 열기
+  // handleBuy 함수 -> 모달 열기
   const handleBuy = () => {
     if (!product?.productItems || product.productItems.length === 0) {
       Alert.alert('사이즈 정보가 없습니다.');
@@ -220,7 +220,7 @@ export default function ProductDetailScreen() {
     });
   };
 
-  // 장바구니 버튼 눌렀을 때 (임시 alert 처리)
+  // 장바구니 버튼 눌렀을 때
   const handleAddToCart = async () => {
     if (!selectedSize || !product) {
       Alert.alert('사이즈를 선택해 주세요.');

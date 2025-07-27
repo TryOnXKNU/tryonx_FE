@@ -15,21 +15,11 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuthStore } from '../store/useAuthStore';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import type { RootStackParamList } from '../navigation/types';
 
-export type AppStackParamList = {
-  Login: undefined;
-  ProductDetail: { productId: number };
-  OrderSheet: {
-    productId: number;
-    size: string;
-    quantity: number;
-  };
-  OrderComplete: { productId: number };
-};
-
-type OrderSheetScreenRouteProp = RouteProp<AppStackParamList, 'OrderSheet'>;
+type OrderSheetScreenRouteProp = RouteProp<RootStackParamList, 'OrderSheet'>;
 type OrderSheetScreenNavigationProp = StackNavigationProp<
-  AppStackParamList,
+  RootStackParamList,
   'OrderSheet'
 >;
 
@@ -60,9 +50,30 @@ type OrderPreviewResponse = {
 };
 
 export default function OrderSheetScreen({ route, navigation }: Props) {
-  const { productId, size, quantity } = route.params;
-  const { token } = useAuthStore();
+  //const { productId, size, quantity } = route.params;
+  //const { token } = useAuthStore();
+  const token = useAuthStore(state => state.token);
   const isFocused = useIsFocused();
+
+  // route.params가 두 가지 케이스 중 하나임을 체크
+  const isDirectOrder =
+    'productId' in route.params &&
+    'size' in route.params &&
+    'quantity' in route.params;
+
+  // 바로구매용 파라미터
+  const productId = isDirectOrder ? route.params.productId : undefined;
+  const size = isDirectOrder ? route.params.size : undefined;
+  const quantity = isDirectOrder ? route.params.quantity : undefined;
+
+  // 장바구니용 파라미터
+  const selectedItems = !isDirectOrder ? route.params.selectedItems : undefined;
+
+  // const totalPayment = !isDirectOrder ? route.params.totalPayment : undefined;
+  // const deliveryFee = !isDirectOrder ? route.params.deliveryFee : undefined;
+  // const expectedPoints = !isDirectOrder
+  //   ? route.params.expectedPoints
+  //   : undefined;
 
   const [loading, setLoading] = useState(false);
   const [orderPreview, setOrderPreview] = useState<OrderPreviewResponse | null>(
@@ -97,6 +108,24 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
     const fetchOrderPreview = async () => {
       setLoading(true);
       try {
+        let body;
+
+        if (isDirectOrder) {
+          // 바로구매
+          body = {
+            items: [{ productId, size, quantity }],
+          };
+        } else {
+          // 장바구니 주문
+          body = {
+            items: selectedItems?.map(item => ({
+              productId: item.productId,
+              size: item.size,
+              quantity: item.quantity,
+            })),
+          };
+        }
+
         const response = await fetch(
           'http://localhost:8080/api/v1/order/preview',
           {
@@ -105,9 +134,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              items: [{ productId, size, quantity }],
-            }),
+            body: JSON.stringify(body),
           },
         );
 
@@ -128,7 +155,16 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
     };
 
     fetchOrderPreview();
-  }, [productId, size, quantity, token, navigation, isFocused]);
+  }, [
+    token,
+    navigation,
+    isFocused,
+    isDirectOrder,
+    productId,
+    size,
+    quantity,
+    selectedItems,
+  ]);
 
   useEffect(() => {
     if (!orderPreview) return;
@@ -178,18 +214,35 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
 
     setLoading(true);
     try {
+      let body;
+
+      if (isDirectOrder) {
+        body = {
+          items: [{ productId, size, quantity }],
+          point: pointsToUse,
+          paymentMethod: selectedPayment,
+          deliveryRequest: selectedRequest,
+        };
+      } else {
+        body = {
+          items: selectedItems?.map(item => ({
+            productId: item.productId,
+            size: item.size,
+            quantity: item.quantity,
+          })),
+          point: pointsToUse,
+          paymentMethod: selectedPayment,
+          deliveryRequest: selectedRequest,
+        };
+      }
+
       const response = await fetch('http://localhost:8080/api/v1/order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          items: [{ productId, size, quantity }],
-          point: pointsToUse,
-          paymentMethod: selectedPayment, // 필요하면 결제 수단도 전달
-          deliveryRequest: selectedRequest, // 배송 요청사항도 보낼 수 있음
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -198,10 +251,20 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
         throw new Error('주문 처리에 실패했습니다.');
       }
 
+      // 응답에서 orderId 받는다고 가정
+      const responseData = await response.json();
+      const orderId = responseData.orderId;
+
       Alert.alert('주문 성공', '주문이 정상적으로 처리되었습니다.', [
         {
           text: '확인',
-          onPress: () => navigation.replace('OrderComplete', { productId }),
+          onPress: () =>
+            navigation.replace('OrderComplete', {
+              orderId,
+              productId: isDirectOrder
+                ? productId!
+                : selectedItems?.[0].productId!,
+            }),
         },
       ]);
     } catch (error) {

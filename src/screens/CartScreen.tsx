@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,42 +7,106 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useAuthStore } from '../store/useAuthStore';
+import { Picker } from '@react-native-picker/picker';
 
-type CartItem = {
-  id: number;
-  productName: string;
-  size: string;
-  quantity: number;
-  price: number;
-  imgUrl: string;
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types'; // RootStackParamList가 정의된 경로에 맞춰 import
+import type { CartItem } from '../navigation/types';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Cart'>;
+
+type CartResponse = {
+  productPrice: number;
+  deliveryFee: number;
+  totalPrice: number;
+  expectedPoint: number;
+  items: CartItem[];
 };
 
 export default function CartScreen() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      productName: '멋진 셔츠',
-      size: 'L',
-      quantity: 2,
-      price: 25000,
-      imgUrl: 'https://via.placeholder.com/80',
-    },
-    {
-      id: 2,
-      productName: '편한 바지',
-      size: 'M',
-      quantity: 1,
-      price: 40000,
-      imgUrl: 'https://via.placeholder.com/80',
-    },
-  ]);
+  const navigation = useNavigation<NavigationProp>();
+
+  const { token } = useAuthStore();
+
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [productPrice, setProductPrice] = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [totalPayment, setTotalPayment] = useState(0);
+  const [expectedPoints, setExpectedPoints] = useState(0);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
   const allSelected =
     cartItems.length > 0 && selectedIds.length === cartItems.length;
+
+  // 옵션 변경 모달
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
+  const [newSize, setNewSize] = useState('');
+  const [newQuantity, setNewQuantity] = useState(1);
+
+  const API_URL = 'http://localhost:8080/api/v1/cart';
+
+  const fetchCart = useCallback(async () => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('장바구니 정보를 가져오는데 실패했습니다.');
+      }
+
+      const data: CartResponse = await response.json();
+
+      setCartItems(data.items);
+      setDeliveryFee(data.deliveryFee);
+      setExpectedPoints(data.expectedPoint);
+
+      // 전체 선택 상태로 초기화
+      const allIds = data.items.map(item => item.cartItemId);
+      setSelectedIds(allIds);
+    } catch (error) {
+      Alert.alert('오류', (error as Error).message);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchCart(); // 장바구니 데이터 로드
+  }, [fetchCart]);
+
+  // 선택된 아이템 가격 합산 계산 useEffect 추가
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setProductPrice(0);
+      setTotalPayment(deliveryFee);
+      return;
+    }
+
+    // 선택된 아이템 필터링
+    const selectedItems = cartItems.filter(item =>
+      selectedIds.includes(item.cartItemId),
+    );
+
+    // 선택된 아이템들의 가격 합산
+    const sumPrice = selectedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    setProductPrice(sumPrice);
+    setTotalPayment(sumPrice + deliveryFee);
+  }, [selectedIds, cartItems, deliveryFee]);
 
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -54,8 +118,50 @@ export default function CartScreen() {
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(cartItems.map(item => item.id));
+      setSelectedIds(cartItems.map(item => item.cartItemId));
     }
+  };
+
+  const updateCartItem = async (
+    cartItemId: number,
+    productId: number,
+    quantity: number,
+    size: string,
+  ) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cartItemId,
+          productId,
+          quantity,
+          size,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('옵션 변경에 실패했습니다.');
+      }
+
+      await fetchCart();
+      Alert.alert('성공', '옵션이 변경되었습니다.');
+    } catch (error) {
+      Alert.alert('오류', (error as Error).message);
+    }
+  };
+
+  const changeOption = (id: number) => {
+    const item = cartItems.find(ci => ci.cartItemId === id);
+    if (!item) return;
+
+    setSelectedItem(item);
+    setNewSize(item.size);
+    setNewQuantity(item.quantity);
+    setIsModalVisible(true);
   };
 
   const deleteSelected = () => {
@@ -72,11 +178,27 @@ export default function CartScreen() {
         {
           text: '삭제',
           style: 'destructive',
-          onPress: () => {
-            setCartItems(prev =>
-              prev.filter(item => !selectedIds.includes(item.id)),
-            );
-            setSelectedIds([]);
+          onPress: async () => {
+            try {
+              const response = await fetch(API_URL, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(
+                  selectedIds.map(id => ({ cartItemId: id })),
+                ),
+              });
+
+              if (!response.ok) {
+                throw new Error('상품 삭제에 실패했습니다.');
+              }
+
+              await fetchCart();
+            } catch (error) {
+              Alert.alert('오류', (error as Error).message);
+            }
           },
         },
       ],
@@ -89,34 +211,36 @@ export default function CartScreen() {
       {
         text: '삭제',
         style: 'destructive',
-        onPress: () =>
-          setCartItems(prev => prev.filter(item => item.id !== id)),
+        onPress: async () => {
+          try {
+            const response = await fetch(`${API_URL}`, {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify([{ cartItemId: id }]),
+            });
+
+            if (!response.ok) {
+              throw new Error('상품 삭제에 실패했습니다.');
+            }
+
+            await fetchCart();
+          } catch (error) {
+            Alert.alert('오류', (error as Error).message);
+          }
+        },
       },
     ]);
   };
 
-  const changeOption = (id: number) => {
-    Alert.alert('옵션 변경', `상품 ${id}의 옵션 변경 화면으로 이동`);
-  };
-
-  const totalProductPrice = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-
-  const deliveryFee =
-    totalProductPrice > 50000 || totalProductPrice === 0 ? 0 : 3000;
-
-  const totalPayment = totalProductPrice + deliveryFee;
-
-  const expectedPoints = Math.floor(totalPayment * 0.01);
-
   const renderItem = ({ item }: { item: CartItem }) => {
-    const isSelected = selectedIds.includes(item.id);
+    const isSelected = selectedIds.includes(item.cartItemId);
     return (
       <View style={styles.cartItem}>
         <TouchableOpacity
-          onPress={() => toggleSelect(item.id)}
+          onPress={() => toggleSelect(item.cartItemId)}
           style={styles.checkbox}
         >
           {isSelected ? (
@@ -126,12 +250,14 @@ export default function CartScreen() {
           )}
         </TouchableOpacity>
 
-        <Image source={{ uri: item.imgUrl }} style={styles.productImage} />
+        <Image
+          source={{ uri: `http://localhost:8080${item.imageUrl}` }}
+          style={styles.productImage}
+        />
 
         <View style={styles.infoContainer}>
-          {/* 삭제 아이콘 */}
           <TouchableOpacity
-            onPress={() => deleteItem(item.id)}
+            onPress={() => deleteItem(item.cartItemId)}
             style={styles.itemDeleteIcon}
           >
             <Icon name="close" size={20} color="#555" />
@@ -139,7 +265,6 @@ export default function CartScreen() {
 
           <Text style={styles.productName}>{item.productName}</Text>
           <Text style={styles.productSize}>
-            {' '}
             {item.size} / {item.quantity} 개
           </Text>
           <Text style={styles.productPrice}>
@@ -147,7 +272,7 @@ export default function CartScreen() {
           </Text>
 
           <TouchableOpacity
-            onPress={() => changeOption(item.id)}
+            onPress={() => changeOption(item.cartItemId)}
             style={styles.optionButton}
           >
             <Text style={styles.optionButtonText}>옵션 변경</Text>
@@ -161,7 +286,78 @@ export default function CartScreen() {
     <View style={styles.container}>
       <Header title="장바구니" hideBackButton={false} />
 
-      {/* 전체 선택 & 삭제 버튼 */}
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>옵션 변경</Text>
+
+              {/* 사이즈 선택 */}
+              <Text style={styles.label}>사이즈 선택</Text>
+              <Picker
+                selectedValue={newSize}
+                onValueChange={(value: string) => setNewSize(value)}
+                style={styles.picker}
+              >
+                {selectedItem?.availableSizes.map((size, index) => (
+                  <Picker.Item key={index} label={size} value={size} />
+                ))}
+              </Picker>
+
+              {/* 수량 변경 */}
+              <Text style={styles.label}>수량 선택</Text>
+              <View style={styles.quantityRow}>
+                <TouchableOpacity
+                  style={styles.qtyButton}
+                  onPress={() => setNewQuantity(q => Math.max(1, q - 1))}
+                >
+                  <Text style={styles.qtyButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.qtyText}>{newQuantity}</Text>
+                <TouchableOpacity
+                  style={styles.qtyButton}
+                  onPress={() => setNewQuantity(q => q + 1)}
+                >
+                  <Text style={styles.qtyButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 버튼 */}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setIsModalVisible(false)}
+                >
+                  <Text style={styles.buttonText}>취소</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={async () => {
+                    if (selectedItem) {
+                      await updateCartItem(
+                        selectedItem.cartItemId,
+                        selectedItem.productId,
+                        newQuantity,
+                        newSize,
+                      );
+                      setIsModalVisible(false);
+                    }
+                  }}
+                >
+                  <Text style={styles.buttonText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.actionRow}>
         <TouchableOpacity onPress={toggleSelectAll} style={styles.checkboxRow}>
           {allSelected ? (
@@ -179,7 +375,7 @@ export default function CartScreen() {
 
       <FlatList
         data={cartItems}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={item => item.cartItemId.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
@@ -189,12 +385,11 @@ export default function CartScreen() {
         }
       />
 
-      {/* 결제 요약 */}
       <View style={styles.summaryContainer}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>상품 금액</Text>
           <Text style={styles.summaryText}>
-            {totalProductPrice.toLocaleString()}원
+            {productPrice.toLocaleString()}원
           </Text>
         </View>
 
@@ -221,7 +416,23 @@ export default function CartScreen() {
 
         <TouchableOpacity
           style={styles.paymentButton}
-          onPress={() => Alert.alert('결제', '결제하기 버튼 클릭')}
+          onPress={() => {
+            const selectedItemsData = cartItems.filter(item =>
+              selectedIds.includes(item.cartItemId),
+            );
+
+            if (selectedItemsData.length === 0) {
+              Alert.alert('알림', '주문할 상품을 선택해주세요.');
+              return;
+            }
+
+            navigation.navigate('OrderSheet', {
+              selectedItems: selectedItemsData,
+              totalPayment,
+              deliveryFee,
+              expectedPoints,
+            });
+          }}
         >
           <Text style={styles.paymentButtonText}>
             {totalPayment.toLocaleString()}원 결제하기
@@ -415,5 +626,76 @@ const styles = StyleSheet.create({
     right: 6,
     zIndex: 10,
     padding: 4,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  picker: {
+    backgroundColor: '#f0f0f0',
+    marginBottom: 16,
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  qtyButton: {
+    backgroundColor: '#448aff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+  },
+  qtyButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  qtyText: {
+    marginHorizontal: 20,
+    fontSize: 18,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 6,
+  },
+  cancelButton: {
+    backgroundColor: '#bbb',
+  },
+  confirmButton: {
+    backgroundColor: '#448aff',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
