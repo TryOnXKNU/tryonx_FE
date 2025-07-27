@@ -80,3 +80,8 @@ export type RootStackParamList = {
   // 관리자
   ProductAdd: undefined;
 };
+
+export type AdminStackParamList = {
+  AdminTabs: undefined;
+  ProductAdd: undefined;
+};

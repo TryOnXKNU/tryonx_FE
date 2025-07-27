@@ -7,95 +7,75 @@ import { RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
 
-import HomeScreen from '../screens/HomeScreen';
-import CategoryScreen from '../screens/CategoryScreen';
-import FittingScreen from '../screens/FittingScreen';
-import WishlistScreen from '../screens/WishlistScreen';
-import MyPageScreen from '../screens/MyPageScreen';
-
-type TabParamList = {
-  Home: undefined;
-  Category: undefined;
-  Fitting: undefined;
-  Wishlist: undefined;
-  MyPage: undefined;
+type TabItem = {
+  name: string;
+  component: React.ComponentType<any>;
+  label: string;
+  icon: string;
 };
 
-const Tab = createBottomTabNavigator<TabParamList>();
-
-const getIconName = (routeName: keyof TabParamList): string => {
-  switch (routeName) {
-    case 'Home':
-      return 'home-outline';
-    case 'Category':
-      return 'grid-outline';
-    case 'Fitting':
-      return 'body-outline';
-    case 'Wishlist':
-      return 'heart-outline';
-    case 'MyPage':
-      return 'person-outline';
-    default:
-      return 'ellipse-outline';
-  }
-};
-
-const screenOptions = ({
-  route,
-}: {
-  route: RouteProp<TabParamList, keyof TabParamList>;
-}): BottomTabNavigationOptions => {
-  const iconName = getIconName(route.name);
-
-  return {
-    headerShown: false,
-    tabBarActiveTintColor: '#000',
-    tabBarInactiveTintColor: '#aaa',
-    tabBarStyle: styles.tabBar,
-    tabBarLabelStyle: styles.tabBarLabel,
-    tabBarIcon: ({ color, size }) => (
-      <View style={styles.iconContainer}>
-        <Icon name={iconName} size={size} color={color} />
-      </View>
-    ),
+type MainTabNavigatorProps = {
+  tabs: TabItem[];
+  theme?: {
+    activeColor?: string;
+    inactiveColor?: string;
+    backgroundColor?: string;
   };
 };
 
-export default function MainTabNavigator() {
+const Tab = createBottomTabNavigator();
+
+export default function MainTabNavigator({
+  tabs,
+  theme = {
+    activeColor: '#000',
+    inactiveColor: '#aaa',
+    backgroundColor: '#fff',
+  },
+}: MainTabNavigatorProps) {
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen
-        name="Category"
-        component={CategoryScreen}
-        options={{ tabBarLabel: '카테고리' }}
-      />
-      <Tab.Screen
-        name="Fitting"
-        component={FittingScreen}
-        options={{ tabBarLabel: 'AI피팅' }}
-      />
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: '홈' }}
-      />
-      <Tab.Screen
-        name="Wishlist"
-        component={WishlistScreen}
-        options={{ tabBarLabel: '좋아요' }}
-      />
-      <Tab.Screen
-        name="MyPage"
-        component={MyPageScreen}
-        options={{ tabBarLabel: '마이페이지' }}
-      />
+    <Tab.Navigator
+      screenOptions={({
+        route,
+      }: {
+        route: RouteProp<Record<string, object | undefined>, string>;
+      }): BottomTabNavigationOptions => {
+        const tab = tabs.find(t => t.name === route.name);
+        return {
+          headerShown: false,
+          tabBarActiveTintColor: theme.activeColor,
+          tabBarInactiveTintColor: theme.inactiveColor,
+          tabBarStyle: [
+            styles.tabBar,
+            { backgroundColor: theme.backgroundColor },
+          ],
+          tabBarLabelStyle: styles.tabBarLabel,
+          tabBarIcon: ({ color, size }) => (
+            <View style={styles.iconContainer}>
+              <Icon
+                name={tab?.icon || 'ellipse-outline'}
+                size={size}
+                color={color}
+              />
+            </View>
+          ),
+        };
+      }}
+    >
+      {tabs.map(tab => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{ tabBarLabel: tab.label }}
+        />
+      ))}
     </Tab.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#fff',
     height: 86,
     paddingBottom: 10,
     paddingTop: 5,
@@ -109,10 +89,10 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 12,
     fontWeight: '600',
-    marginTop: 6, // 라벨을 아이콘에서 좀 더 떨어뜨림
+    marginTop: 6,
   },
   iconContainer: {
-    marginBottom: 4, // 아이콘과 라벨 간격 조절용 공간 확보
+    marginBottom: 4,
     alignItems: 'center',
   },
 });
