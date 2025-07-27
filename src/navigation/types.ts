@@ -109,4 +109,6 @@ export type RootStackParamList = {
 export type AdminStackParamList = {
   AdminTabs: undefined;
   ProductAdd: undefined;
+  MemberDetail: { memberId: number };
+  MemberOrders: { memberId: number };
 };
