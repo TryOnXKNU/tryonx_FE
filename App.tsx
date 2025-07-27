@@ -10,8 +10,10 @@ function App() {
 
   useEffect(() => {
     const loadAuth = async () => {
-      await useAuthStore.getState().loadToken();
-      setLoading(false);
+      // await useAuthStore.getState().loadToken();
+      await useAuthStore.getState().loadAuth(); // 여기서 토큰/역할 로드
+      // setLoading(false);
+      setTimeout(() => setLoading(false), 2000);
     };
     loadAuth();
   }, []);

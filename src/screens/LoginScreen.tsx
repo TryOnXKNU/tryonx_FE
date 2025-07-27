@@ -21,16 +21,19 @@ function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const setToken = useAuthStore(state => state.setToken);
+  //const setToken = useAuthStore(state => state.setToken);
+  const setAuth = useAuthStore(state => state.setAuth);
 
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
-      const token = getQueryParamFromUrl(url, 'token'); // code -> token으로 변경
+      //  const token = getQueryParamFromUrl(url, 'token'); // code -> token으로 변경
+      const token = getQueryParamFromUrl(url, 'token');
+      const role = getQueryParamFromUrl(url, 'role'); // role도 추가
 
-      if (token) {
+      if (token && role) {
         try {
-          setToken(token); // Zustand 스토어에 저장
+          setAuth(token, role as 'USER' | 'ADMIN'); // Zustand 스토어에 저장
           Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
           navigation.navigate('Main');
         } catch (error) {
@@ -49,7 +52,7 @@ function LoginScreen() {
     return () => {
       subscription.remove();
     };
-  }, [navigation, setToken]);
+  }, [navigation, setAuth]);
 
   const getQueryParamFromUrl = (url: string, key: string): string | null => {
     const match = url.match(new RegExp('[?&]' + key + '=([^&]+)'));
@@ -68,10 +71,10 @@ function LoginScreen() {
         password,
       });
 
-      const { token } = res.data;
+      const { token, role } = res.data; // role도 서버에서 받아온다고 가정
       await AsyncStorage.setItem('authToken', token);
-      setToken(token);
-      // 토큰 저장
+      await AsyncStorage.setItem('userRole', role);
+      setAuth(token, role);
 
       Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
 
@@ -83,33 +86,35 @@ function LoginScreen() {
 
   const handleKakaoLogin = async () => {
     try {
-      const token = await login(); // Kakao SDK 로그인
+      const token = await login();
       if (!token) {
         Alert.alert('카카오 로그인 실패', '로그인에 실패했습니다.');
         return;
       }
 
-      const profile = await getProfile(); // 사용자 프로필 정보 가져오기
-
-      // 서버로 전달할 데이터 구성
-      const payload = {
-        accessToken: token.accessToken,
-        //kakaoProfile: profile,
-      };
+      const profile = await getProfile();
+      const payload = { accessToken: token.accessToken };
 
       const res = await axios.post(
         'http://localhost:8080/api/v1/auth/kakao',
         payload,
       );
+      const { token: serverToken, role } = res.data;
 
-      await AsyncStorage.setItem('authToken', res.data.token);
-      setToken(res.data.token);
+      if (!serverToken) {
+        Alert.alert('서버 오류', '토큰을 받지 못했습니다.');
+        return;
+      }
+
+      await AsyncStorage.setItem('authToken', serverToken);
+      await AsyncStorage.setItem('userRole', role ?? 'USER');
+
+      setAuth(serverToken, role ?? 'USER');
 
       Alert.alert('로그인 성공', `${profile.nickname}님 환영합니다!`);
-      // navigation.navigate('Main');
     } catch (error) {
       console.error('카카오 로그인 실패:', error);
-      Alert.alert('카카오 로그인 실패', '오류가 발생했습니다.');
+      Alert.alert('카카오 로그인 실패', '네트워크 또는 서버 오류');
     }
   };
 
