@@ -1,3 +1,15 @@
+export type CartItem = {
+  cartItemId: number;
+  productId: number;
+  productItemId: number;
+  productName: string;
+  size: string;
+  quantity: number;
+  price: number;
+  imageUrl: string;
+  availableSizes: string[];
+};
+
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -37,7 +49,20 @@ export type RootStackParamList = {
   ProductDetail: { productId: number };
 
   //주문
-  OrderSheet: { productId: number; size: string; quantity: number };
+  OrderSheet:
+    | {
+        // 바로구매용
+        productId: number;
+        size: string;
+        quantity: number;
+      }
+    | {
+        // 장바구니 결제용
+        selectedItems: CartItem[];
+        totalPayment: number;
+        deliveryFee: number;
+        expectedPoints: number;
+      };
 
   OrderComplete: {
     orderId: string;
