@@ -2,14 +2,22 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainTabNavigator from './MainTabNavigator';
 
+// 하단탭
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import UserManageScreen from '../screens/admin/UserManageScreen';
 import ProductManageScreen from '../screens/admin/ProductManageScreen';
 import OrderManageScreen from '../screens/admin/OrderManageScreen';
 import InquiryManageScreen from '../screens/admin/InquiryManageScreen';
-import ProductAddScreen from '../screens/admin/ProductAddScreen';
 
-const Stack = createNativeStackNavigator();
+import ProductAddScreen from '../screens/admin/ProductAddScreen';
+import MemberDetailScreen from '../screens/admin/MemberDetailScreen';
+import MemberOrdersScreen from '../screens/admin/MemberOrdersScreen';
+
+import { AdminStackParamList } from '../navigation/types';
+
+const Stack = createNativeStackNavigator<AdminStackParamList>();
+
+//const Stack = createNativeStackNavigator();
 
 function AdminTabs() {
   return (
@@ -60,6 +68,8 @@ export default function AdminStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabs} />
       <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
+      <Stack.Screen name="MemberDetail" component={MemberDetailScreen} />
+      <Stack.Screen name="MemberOrders" component={MemberOrdersScreen} />
     </Stack.Navigator>
   );
 }
