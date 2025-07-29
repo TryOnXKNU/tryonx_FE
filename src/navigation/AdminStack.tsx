@@ -13,6 +13,9 @@ import ProductAddScreen from '../screens/admin/ProductAddScreen';
 import MemberDetailScreen from '../screens/admin/MemberDetailScreen';
 import MemberOrdersScreen from '../screens/admin/MemberOrdersScreen';
 
+import AdminExchangeListScreen from '../screens/admin/AdminExchangeListScreen';
+import AdminReturnListScreen from '../screens/admin/AdminReturnListScreen';
+
 import { AdminStackParamList } from '../navigation/types';
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -67,9 +70,16 @@ export default function AdminStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabs} />
+      <Stack.Screen name="OrderManage" component={OrderManageScreen} />
+      <Stack.Screen name="InquiryManage" component={InquiryManageScreen} />
       <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
       <Stack.Screen name="MemberDetail" component={MemberDetailScreen} />
       <Stack.Screen name="MemberOrders" component={MemberOrdersScreen} />
+      <Stack.Screen
+        name="AdminExchangeList"
+        component={AdminExchangeListScreen}
+      />
+      <Stack.Screen name="AdminReturnList" component={AdminReturnListScreen} />
     </Stack.Navigator>
   );
 }

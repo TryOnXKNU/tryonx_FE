@@ -24,7 +24,7 @@ const Tab = createMaterialTopTabNavigator();
 export default function AdminInquiryScreen() {
   return (
     <View style={styles.container}>
-      <Header title="문의 관리" showRightIcons={false} hideBackButton={true} />
+      <Header title="문의 관리" showRightIcons={false} hideBackButton={false} />
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: '#111827',
