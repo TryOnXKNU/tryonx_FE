@@ -31,8 +31,8 @@ type Member = {
 const searchOptions = [
   { key: 'name', label: '회원명' },
   { key: 'memberId', label: '회원번호' },
-  { key: 'email', label: '이메일' },
-  { key: 'phone', label: '휴대번호' },
+  // { key: 'email', label: '이메일' },
+  // { key: 'phone', label: '휴대번호' },
 ];
 
 const ProfileImage = ({ uri }: { uri: string }) => {

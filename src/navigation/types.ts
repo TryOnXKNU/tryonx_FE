@@ -112,4 +112,8 @@ export type AdminStackParamList = {
   ProductAdd: undefined;
   MemberDetail: { memberId: number };
   MemberOrders: { memberId: number };
+  AdminExchangeList: undefined;
+  AdminReturnList: undefined;
+  OrderManage: undefined;
+  InquiryManage: undefined;
 };
