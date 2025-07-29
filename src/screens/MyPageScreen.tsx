@@ -29,6 +29,7 @@ export default function MyPageScreen() {
   const [userName, setUserName] = useState('');
   const [height, setHeight] = useState();
   const [weight, setWeight] = useState();
+  const [point, setPoint] = useState();
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
@@ -39,7 +40,7 @@ export default function MyPageScreen() {
   const [reviews, setReviews] = useState<number | undefined>();
 
   const handleEditProfile = () => {
-    navigation.navigate('EditProfile');
+    navigation.navigate('MyProfile');
   };
 
   const handleEditProfileImage = () => {
@@ -70,7 +71,7 @@ export default function MyPageScreen() {
               });
 
               Alert.alert('탈퇴 완료', '회원탈퇴가 완료되었습니다.');
-              logout(); // ✅ 여기서 상태를 바꾸면 AppNavigator가 AuthStack으로 전환됨
+              logout(); //  여기서 상태를 바꾸면 AppNavigator가 AuthStack으로 전환됨
             } catch (error) {
               console.error('회원탈퇴 오류:', error);
               Alert.alert('오류', '회원탈퇴 중 문제가 발생했습니다.');
@@ -103,6 +104,7 @@ export default function MyPageScreen() {
           setUserName(me.nickname);
           setHeight(me.height);
           setWeight(me.weight);
+          setPoint(me.point);
         }
 
         const profileRes = await axios.get(
@@ -153,8 +155,6 @@ export default function MyPageScreen() {
     fetchReviewCount();
   }, [token, navigation, isFocused]);
 
-  const points = 1500;
-
   return (
     <View style={styles.safeArea}>
       <Header title="마이페이지" showRightIcons={true} hideBackButton={true} />
@@ -185,7 +185,7 @@ export default function MyPageScreen() {
         </View>
 
         <View style={styles.quickRow}>
-          <QuickButton label="적립금" icon="wallet-outline" count={points} />
+          <QuickButton label="적립금" icon="wallet-outline" count={point} />
           <QuickButton
             label="주문"
             icon="cube-outline"

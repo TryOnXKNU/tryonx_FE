@@ -6,8 +6,15 @@ import { RootStackParamList } from './types'; // 타입 import
 import UserMainStack from './UserMainStack';
 import SearchScreen from '../screens/SearchScreen';
 import SearchOutputScreen from '../screens/SearchOutputScreen';
-import EditProfileScreen from '../screens/EditProfileScreen';
 import EditProfileImageScreen from '../screens/EditProfileImageScreen';
+
+import MyProfileScreen from '../screens/MyProfileScreen';
+
+import EditNicknameScreen from '../screens/EditNicknameScreen';
+import EditAddressScreen from '../screens/EditAddressScreen';
+import EditPasswordScreen from '../screens/EditPasswordScreen';
+import EditBodyInfoScreen from '../screens/EditBodyInfoScreen';
+
 import NotificationScreen from '../screens/NotificationScreen';
 import CategoryListScreen from '../screens/CategoryListScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
@@ -37,22 +44,26 @@ import ReturnRequestScreen from '../screens/ReturnRequestScreen';
 import ReturnListScreen from '../screens/ReturnListScreen';
 import ReturnDetailScreen from '../screens/ReturnDetailScreen';
 
-// 관리자
-import ProductAddScreen from '../screens/admin/ProductAddScreen';
-
 const Stack = createNativeStackNavigator<RootStackParamList>(); // 타입 적용
 
 export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={UserMainStack} />
+
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="SearchOutput" component={SearchOutputScreen} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+
       <Stack.Screen
         name="EditProfileImage"
         component={EditProfileImageScreen}
       />
+      <Stack.Screen name="MyProfile" component={MyProfileScreen} />
+      <Stack.Screen name="EditNickname" component={EditNicknameScreen} />
+      <Stack.Screen name="EditAddress" component={EditAddressScreen} />
+      <Stack.Screen name="EditPassword" component={EditPasswordScreen} />
+      <Stack.Screen name="EditBodyInfo" component={EditBodyInfoScreen} />
+
       <Stack.Screen name="Notification" component={NotificationScreen} />
       <Stack.Screen name="CategoryList" component={CategoryListScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
@@ -77,8 +88,6 @@ export default function MainStack() {
       <Stack.Screen name="ReturnDetail" component={ReturnDetailScreen} />
 
       <Stack.Screen name="Cart" component={CartScreen} />
-      {/* 관리자 */}
-      <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
     </Stack.Navigator>
   );
 }

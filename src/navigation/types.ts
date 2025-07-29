@@ -33,8 +33,12 @@ export type RootStackParamList = {
   SearchOutput: { keyword: string };
 
   // 내정보 수정
-  EditProfile: undefined;
   EditProfileImage: undefined;
+  MyProfile: undefined;
+  EditNickname: undefined;
+  EditAddress: undefined;
+  EditPassword: undefined;
+  EditBodyInfo: undefined;
 
   //알림
   Notification: undefined;
@@ -101,9 +105,6 @@ export type RootStackParamList = {
 
   // ReviewList: { productId: number };
   // QaList: { productId: number };
-
-  // 관리자
-  ProductAdd: undefined;
 };
 
 export type AdminStackParamList = {
