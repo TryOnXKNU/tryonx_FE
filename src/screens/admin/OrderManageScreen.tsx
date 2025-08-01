@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,8 +8,8 @@ import {
   TextInput,
 } from 'react-native';
 import Header from '../../components/Header';
+import { useAuthStore } from '../../store/useAuthStore';
 
-// 'Pending' 상태 추가 (결제완료)
 type OrderStatus =
   | ''
   | 'PENDING'
@@ -35,7 +35,7 @@ type Order = {
 
 const ORDER_STATUSES: { label: string; value: OrderStatus }[] = [
   { label: '전체', value: '' },
-  { label: '결제완료', value: 'PENDING' }, // 추가된 상태
+  { label: '결제완료', value: 'PENDING' },
   { label: '발송 처리', value: 'PROCESSING' },
   { label: '배송 준비', value: 'READY' },
   { label: '배송중', value: 'SHIPPING' },
@@ -43,13 +43,17 @@ const ORDER_STATUSES: { label: string; value: OrderStatus }[] = [
 ];
 
 export default function OrderManageScreen() {
+  const { token } = useAuthStore();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('');
   const [searchText, setSearchText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  async function fetchOrders() {
+  // ✅ useCallback으로 fetchOrders 정의
+  const fetchOrders = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
       const response = await fetch(
@@ -57,25 +61,29 @@ export default function OrderManageScreen() {
         {
           headers: {
             Accept: '*/*',
-            Authorization:
-              'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJiaW4wNTI1MTJAZ21haWwuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzUzODEyNDk5LCJleHAiOjE3NTM5OTI0OTl9.-P9KKkOlG6ZjK0_e-lLu7nSVIOlHTLT8pk4arblCMnflXajUaMciM9Y-NDKdO2rVDISiKRFS6Kv3o8oQXZDblA',
+            Authorization: `Bearer ${token}`,
           },
         },
       );
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
       const data: Order[] = await response.json();
       setOrders(data);
       setFilteredOrders(data);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
+  // ✅ token 변경 시 주문 데이터 가져오기
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
+  // ✅ 검색 및 상태 필터 적용
   useEffect(() => {
     let filtered = [...orders];
 
@@ -97,6 +105,7 @@ export default function OrderManageScreen() {
     setFilteredOrders(filtered);
   }, [orders, selectedStatus, searchText]);
 
+  // ✅ 주문 렌더링
   const renderOrder = ({ item }: { item: Order }) => (
     <View style={styles.orderItem}>
       <Text style={styles.orderNum}>{item.orderNum}</Text>
