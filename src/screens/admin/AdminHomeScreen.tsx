@@ -45,12 +45,19 @@ export default function AdminHomeScreen() {
 
         {/* 회원 정보 */}
         <View style={styles.memberSection}>
-          <TouchableOpacity style={styles.memberBox}>
+          <TouchableOpacity
+            style={styles.memberBox}
+            onPress={() => navigation.navigate('RecentMembers')}
+          >
             <Icon name="person-add" size={28} color="#D32F2F" />
             <Text style={styles.memberText}>신규회원</Text>
             <Text style={styles.memberCount}>12명</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.memberBox}>
+
+          <TouchableOpacity
+            style={styles.memberBox}
+            onPress={() => navigation.navigate('AllMembers')}
+          >
             <Icon name="groups" size={28} color="#000" />
             <Text style={styles.memberText}>전체회원</Text>
             <Text style={styles.memberCount}>1,024명</Text>
@@ -85,7 +92,7 @@ export default function AdminHomeScreen() {
 
           <TouchableOpacity
             style={styles.statusRow}
-            onPress={() => navigation.navigate('InquiryManage')}
+            onPress={() => navigation.navigate('AdminAsk')}
           >
             <Text style={styles.statusLabel}>문의 접수</Text>
             <Text style={styles.statusValue}>8건</Text>
