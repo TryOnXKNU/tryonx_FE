@@ -20,6 +20,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
 
   MyPage: undefined;
+  PointHistory: undefined;
 
   //장바구니
   Cart: undefined;
@@ -107,9 +108,44 @@ export type RootStackParamList = {
   // QaList: { productId: number };
 };
 
+export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'FREE';
+
+export type ProductItemInfo = {
+  size: Size;
+  stock: string;
+  length: string;
+  shoulder: string;
+  chest: string;
+  sleeve_length: string;
+  waist: string;
+  thigh: string;
+  rise: string;
+  hem: string;
+  hip: string;
+};
+
+export type FormType = {
+  name: string;
+  description: string;
+  price: string;
+  discountRate: string;
+  categoryId: string;
+  bodyShape: string;
+  status: string;
+  productItemInfoDtos: ProductItemInfo[];
+};
+
 export type AdminStackParamList = {
   AdminTabs: undefined;
+
+  ProductManage: undefined;
+  AdminProductDetail: { productId: number };
   ProductAdd: undefined;
+  ProductAddImage: { form: FormType; token: string };
+
+  AdminProductEdit: { productId: number };
+  AdminProductImageEdit: { productId: number; productInfo: FormType };
+
   MemberDetail: { memberId: number };
   MemberOrders: { memberId: number };
 

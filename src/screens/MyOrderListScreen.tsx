@@ -144,7 +144,7 @@ export default function MyOrderListScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="주문내역" showRightIcons={false} />
+      <Header title="주문내역" showHomeButton={true} showRightIcons={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {orders.length === 0 && (

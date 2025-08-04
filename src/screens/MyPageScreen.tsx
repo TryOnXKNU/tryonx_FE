@@ -185,7 +185,13 @@ export default function MyPageScreen() {
         </View>
 
         <View style={styles.quickRow}>
-          <QuickButton label="적립금" icon="wallet-outline" count={point} />
+          <QuickButton
+            label="적립금"
+            icon="wallet-outline"
+            count={point}
+            onPress={() => navigation.navigate('PointHistory')}
+          />
+
           <QuickButton
             label="주문"
             icon="cube-outline"
