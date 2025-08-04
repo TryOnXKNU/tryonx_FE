@@ -4,23 +4,23 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  Image,
-  Alert,
   KeyboardAvoidingView,
   TouchableOpacity,
   Text,
+  Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'react-native-image-picker';
+
 import { useAuthStore } from '../../store/useAuthStore';
-import axios from 'axios';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { AdminStackParamList } from '../../navigation/types';
+
 import Header from '../../components/Header';
 
 type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'FREE';
 
 type ProductItemInfo = {
   size: Size;
-  stock: string; // input value, string으로 받음
+  stock: string;
   length: string;
   shoulder: string;
   chest: string;
@@ -33,7 +33,6 @@ type ProductItemInfo = {
 };
 
 type FormType = {
-  // code: string;
   name: string;
   description: string;
   price: string;
@@ -45,19 +44,10 @@ type FormType = {
 };
 
 export default function ProductAddScreen() {
-  const token = useAuthStore(state => state.token);
-  const navigation = useNavigation();
-
-  // 상태 추가
-  // const [products, setProducts] = useState<Product[]>([]);
-  // const [loading, setLoading] = useState(false);
-
-  //const SERVER_URL = 'http://localhost:8080';
-
-  // 선택
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [bodyShapeOpen, setBodyShapeOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
+  const token = useAuthStore(state => state.token); // 기존 방식 유지
+  // navigation 객체 타입 지정
+  const navigation =
+    useNavigation<NavigationProp<AdminStackParamList, 'ProductAdd'>>();
 
   const categoryOptions = [
     { label: 'Top', value: '1' },
@@ -81,7 +71,6 @@ export default function ProductAddScreen() {
   ];
 
   const placeholderMap: Record<string, string> = {
-    // code: '상품 코드를 입력하세요.',
     name: '상품명을 입력하세요.',
     description: '상품 설명을 입력하세요.',
     price: '상품 가격을 입력하세요.',
@@ -106,7 +95,6 @@ export default function ProductAddScreen() {
   ] as const;
 
   const [form, setForm] = useState<FormType>({
-    // code: '',
     name: '',
     description: '',
     price: '',
@@ -129,17 +117,11 @@ export default function ProductAddScreen() {
     })),
   });
 
-  const [images, setImages] = useState<ImagePicker.Asset[]>([]);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null); // 아코디언 상태
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [bodyShapeOpen, setBodyShapeOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
 
-  const handleChooseImage = () => {
-    ImagePicker.launchImageLibrary({ mediaType: 'photo' }, response => {
-      const assets = response.assets;
-      if (assets && Array.isArray(assets)) {
-        setImages(prev => [...prev, ...assets]);
-      }
-    });
-  };
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const handleInputChange = (key: keyof FormType, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -163,14 +145,8 @@ export default function ProductAddScreen() {
     });
   };
 
-  const handleSubmit = async () => {
-    if (!token) {
-      Alert.alert('오류', '로그인 정보가 없습니다.');
-      return;
-    }
-
+  const handleNext = () => {
     const requiredFields: (keyof FormType)[] = [
-      // 'code',
       'name',
       'description',
       'price',
@@ -181,17 +157,14 @@ export default function ProductAddScreen() {
     for (const field of requiredFields) {
       const value = form[field];
       if (!value || (typeof value === 'string' && value.trim() === '')) {
-        Alert.alert('모두 입력해주세요.', `${field} 값을 입력해주세요.`);
+        Alert.alert('입력 오류', `${placeholderMap[field]} 입력해주세요.`);
         return;
       }
     }
 
     for (const item of form.productItemInfoDtos) {
       if (!item.stock || item.stock.trim() === '') {
-        Alert.alert(
-          '모두 입력해주세요.',
-          `${item.size} 사이즈 재고를 입력해주세요.`,
-        );
+        Alert.alert('입력 오류', `${item.size} 사이즈 재고를 입력해주세요.`);
         return;
       }
 
@@ -200,7 +173,7 @@ export default function ProductAddScreen() {
         for (const field of measurementFields) {
           if (!item[field] || item[field].trim() === '') {
             Alert.alert(
-              '모두 입력해주세요.',
+              '입력 오류',
               `${item.size} 사이즈의 ${field.replace(
                 '_',
                 ' ',
@@ -212,70 +185,14 @@ export default function ProductAddScreen() {
       }
     }
 
-    if (images.length === 0) {
-      Alert.alert('사진 선택', '최소 한 개 이상의 이미지를 선택해야 합니다.');
+    // token이 없으면 경고 후 return
+    if (!token) {
+      Alert.alert('로그인 오류', '로그인이 필요합니다.');
       return;
     }
 
-    const dto = {
-      ...form,
-      price: Number(form.price),
-      discountRate: Number(form.discountRate),
-      categoryId: Number(form.categoryId),
-      productItemInfoDtos: form.productItemInfoDtos.map(item => ({
-        ...item,
-        stock: Number(item.stock),
-        length: item.length || null,
-        shoulder: item.shoulder || null,
-        chest: item.chest || null,
-        sleeve_length: item.sleeve_length || null,
-        waist: item.waist || null,
-        thigh: item.thigh || null,
-        rise: item.rise || null,
-        hem: item.hem || null,
-        hip: item.hip || null,
-      })),
-    };
-
-    const data = new FormData();
-
-    data.append('dto', {
-      string: JSON.stringify(dto),
-      name: 'dto',
-      type: 'application/json',
-    } as any);
-
-    images.forEach((img, index) => {
-      if (!img.uri) return;
-
-      const uri = img.uri.startsWith('file://') ? img.uri : `file://${img.uri}`;
-
-      data.append('images', {
-        uri,
-        type: img.type || 'image/jpeg',
-        name: img.fileName || `image${index}.jpg`,
-      } as any);
-    });
-
-    try {
-      const response = await axios.post(
-        'http://localhost:8080/api/v1/products',
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      console.log('등록 성공:', response.data);
-      Alert.alert('성공', '상품이 성공적으로 등록되었습니다.', [
-        { text: '확인', onPress: () => navigation.goBack() },
-      ]);
-    } catch (error: any) {
-      console.error('등록 실패:', error.response?.data || error.message);
-      Alert.alert('실패', '상품 등록에 실패했습니다.');
-    }
+    // 이미지 선택 화면으로 이동, form과 token 같이 넘길 수도 있음
+    navigation.navigate('ProductAddImage', { form, token });
   };
 
   return (
@@ -286,15 +203,8 @@ export default function ProductAddScreen() {
         style={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 기본 정보 입력 */}
         {(
-          [
-            // 'code',
-            'name',
-            'description',
-            'price',
-            'discountRate',
-          ] as (keyof FormType)[]
+          ['name', 'description', 'price', 'discountRate'] as (keyof FormType)[]
         ).map(key => (
           <TextInput
             key={key}
@@ -306,7 +216,6 @@ export default function ProductAddScreen() {
         ))}
 
         <View style={styles.dropdownWrapper}>
-          {/* Category 드롭다운 */}
           <Text style={styles.dropdownLabel}>카테고리</Text>
           <TouchableOpacity
             style={styles.dropdownButton}
@@ -339,7 +248,6 @@ export default function ProductAddScreen() {
           )}
         </View>
 
-        {/* Body Shape 드롭다운 */}
         <View style={styles.dropdownWrapper}>
           <Text style={styles.dropdownLabel}>바디 쉐입</Text>
           <TouchableOpacity
@@ -375,7 +283,6 @@ export default function ProductAddScreen() {
           )}
         </View>
 
-        {/* Status 드롭다운 */}
         <View style={styles.dropdownWrapper}>
           <Text style={styles.dropdownLabel}>상품 상태</Text>
           <TouchableOpacity
@@ -408,7 +315,6 @@ export default function ProductAddScreen() {
           )}
         </View>
 
-        {/* 사이즈별 재고 및 실측 입력 - 아코디언 */}
         {form.productItemInfoDtos.map((item, index) => (
           <View key={item.size} style={styles.sizeGroup}>
             <View style={styles.sizeTitleRow}>
@@ -426,7 +332,7 @@ export default function ProductAddScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={`${item.size} 재고를 입력하세요.`}
+              placeholder={`${item.size} 사이즈 재고`}
               keyboardType="numeric"
               value={item.stock}
               onChangeText={text =>
@@ -435,12 +341,15 @@ export default function ProductAddScreen() {
             />
 
             {expandedIndex === index && (
-              <>
+              <View style={styles.measurementsContainer}>
                 {measurementFields.map(field => (
                   <TextInput
                     key={field}
                     style={styles.input}
-                    placeholder={`${item.size} ${field.replace('_', ' ')} 입력`}
+                    placeholder={`${item.size} 사이즈 ${field.replace(
+                      '_',
+                      ' ',
+                    )}`}
                     keyboardType="numeric"
                     value={item[field]}
                     onChangeText={text =>
@@ -448,35 +357,13 @@ export default function ProductAddScreen() {
                     }
                   />
                 ))}
-              </>
+              </View>
             )}
           </View>
         ))}
 
-        {/* 이미지 업로드 */}
-        <View style={styles.imageUpload}>
-          <TouchableOpacity
-            onPress={handleChooseImage}
-            style={styles.imageButton}
-          >
-            <Text style={styles.imageButtonText}>사진 선택</Text>
-          </TouchableOpacity>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {images.map((img, i) => (
-              <Image
-                key={i}
-                source={{ uri: img.uri }}
-                style={styles.imagePreview}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* 등록 버튼 */}
-        <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
-          <Text style={styles.submitButtonText}>등록하기</Text>
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+          <Text style={styles.nextButtonText}>다음</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -485,111 +372,53 @@ export default function ProductAddScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scrollContent: { paddingHorizontal: 16, paddingVertical: 12 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-    fontSize: 16,
+    borderRadius: 5,
+    padding: 10,
+    marginVertical: 6,
   },
+  dropdownWrapper: { marginVertical: 8 },
+  dropdownLabel: { marginBottom: 6, fontWeight: 'bold' },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#999',
+    padding: 10,
+    borderRadius: 5,
+  },
+  dropdownButtonText: { fontSize: 16 },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#999',
+    borderRadius: 5,
+    marginTop: 4,
+    backgroundColor: '#eee',
+  },
+  dropdownItem: { padding: 10 },
+  dropdownItemText: { fontSize: 16 },
   sizeGroup: {
-    marginBottom: 20,
+    marginTop: 15,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 10,
+    padding: 12,
+    borderRadius: 6,
   },
   sizeTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
   },
-  sizeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  toggleIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  imageUpload: {
-    marginVertical: 20,
-  },
-  imageButton: {
-    backgroundColor: '#000',
-    padding: 12,
+  sizeTitle: { fontSize: 18, fontWeight: 'bold' },
+  toggleIcon: { fontSize: 20, fontWeight: 'bold' },
+  measurementsContainer: { marginTop: 10 },
+  nextButton: {
+    marginTop: 30,
+    backgroundColor: '#007bff',
+    padding: 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  imageButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  imagePreview: {
-    width: 80,
-    height: 80,
-    marginRight: 10,
-    borderRadius: 8,
-  },
-  submitButton: {
-    backgroundColor: '#000',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  dropdownWrapper: {
-    marginBottom: 12,
-  },
-  dropdownLabel: {
-    marginBottom: 4,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  dropdownButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#f9f9f9',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  dropdownMenu: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    padding: 12,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedText: {
-    fontWeight: 'bold',
-    color: '#000',
-  },
+  nextButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
 });

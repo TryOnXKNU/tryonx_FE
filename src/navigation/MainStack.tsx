@@ -9,6 +9,7 @@ import SearchOutputScreen from '../screens/SearchOutputScreen';
 import EditProfileImageScreen from '../screens/EditProfileImageScreen';
 
 import MyProfileScreen from '../screens/MyProfileScreen';
+import PointHistoryScreen from '../screens/PointHistoryScreen';
 
 import EditNicknameScreen from '../screens/EditNicknameScreen';
 import EditAddressScreen from '../screens/EditAddressScreen';
@@ -59,6 +60,8 @@ export default function MainStack() {
         component={EditProfileImageScreen}
       />
       <Stack.Screen name="MyProfile" component={MyProfileScreen} />
+      <Stack.Screen name="PointHistory" component={PointHistoryScreen} />
+
       <Stack.Screen name="EditNickname" component={EditNicknameScreen} />
       <Stack.Screen name="EditAddress" component={EditAddressScreen} />
       <Stack.Screen name="EditPassword" component={EditPasswordScreen} />

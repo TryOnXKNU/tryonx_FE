@@ -276,7 +276,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Header title="주문서" showHomeButton={true} showRightIcons={true} />
+      <Header title="주문서" showHomeButton={false} showRightIcons={false} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* 배송지 정보 */}
         <View style={styles.section}>
