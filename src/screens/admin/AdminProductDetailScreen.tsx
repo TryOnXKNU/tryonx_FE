@@ -44,6 +44,13 @@ type ProductDetail = {
   }[];
 };
 
+// 상태 옵션 한글 매핑
+const STATUS_OPTIONS = [
+  { label: '판매중', value: 'AVAILABLE' },
+  { label: '품절', value: 'SOLDOUT' },
+  { label: '숨김', value: 'HIDDEN' },
+];
+
 export default function ProductDetailScreen() {
   const { params } = useRoute<ProductDetailRouteProp>();
   const { productId } = params;
@@ -101,7 +108,7 @@ export default function ProductDetailScreen() {
                   navigation.dispatch(
                     CommonActions.reset({
                       index: 0,
-                      routes: [{ name: 'ProductManage' }], // ✅ 목록 화면으로 이동
+                      routes: [{ name: 'ProductManage' }],
                     }),
                   ),
               },
@@ -160,14 +167,19 @@ export default function ProductDetailScreen() {
         {/* 재고 정보 */}
         <View style={styles.stockSection}>
           <Text style={styles.sectionTitle}>재고 정보</Text>
-          {product.productItems.map((item, idx) => (
-            <Text key={idx}>
-              {item.size} - {item.stock}개 ({item.status})
-            </Text>
-          ))}
+          {product.productItems.map((item, idx) => {
+            const statusLabel =
+              STATUS_OPTIONS.find(option => option.value === item.status)
+                ?.label || item.status;
+            return (
+              <Text key={idx}>
+                {item.size} - {item.stock}개 ({statusLabel})
+              </Text>
+            );
+          })}
         </View>
 
-        {/*  버튼 영역 */}
+        {/* 버튼 영역 */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.button, styles.editButton]}
