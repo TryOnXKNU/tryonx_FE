@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
   },
   searchOptionSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000',
   },
   searchOptionText: {
     fontSize: 14,

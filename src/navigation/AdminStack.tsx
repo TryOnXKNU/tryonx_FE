@@ -6,7 +6,10 @@ import MainTabNavigator from './MainTabNavigator';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import UserManageScreen from '../screens/admin/UserManageScreen';
 import ProductManageScreen from '../screens/admin/ProductManageScreen';
+
 import OrderManageScreen from '../screens/admin/OrderManageScreen';
+import AdminOrderDetailScreen from '../screens/admin/AdminOrderDetailScreen';
+
 import AdminAskScreen from '../screens/admin/AdminAskScreen';
 
 import RecentMembersScreen from '../screens/admin/RecentMembersScreen';
@@ -87,7 +90,13 @@ export default function AdminStack() {
       <Stack.Screen name="ProductManage" component={ProductManageScreen} />
       <Stack.Screen name="RecentMembers" component={RecentMembersScreen} />
       <Stack.Screen name="AllMembers" component={AllMembersScreen} />
+
       <Stack.Screen name="OrderManage" component={OrderManageScreen} />
+      <Stack.Screen
+        name="AdminOrderDetail"
+        component={AdminOrderDetailScreen}
+      />
+
       <Stack.Screen name="AdminAsk" component={AdminAskScreen} />
       <Stack.Screen
         name="AdminProductDetail"

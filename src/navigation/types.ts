@@ -155,6 +155,7 @@ export type AdminStackParamList = {
   AdminReturnDetail: undefined;
 
   OrderManage: undefined;
+  AdminOrderDetail: { orderId: number | string };
 
   AdminAsk: undefined;
   AdminAskDetail: { askId: number };
