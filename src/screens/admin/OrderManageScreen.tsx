@@ -9,14 +9,17 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AdminStackParamList } from '../../navigation/types';
 
 type OrderStatus =
-  | ''
   | 'PENDING'
   | 'PROCESSING'
   | 'READY'
   | 'SHIPPING'
-  | 'DELIVERED';
+  | 'DELIVERED'
+  | '';
 
 type OrderItem = {
   orderItemId: number;
@@ -33,17 +36,39 @@ type Order = {
   items: OrderItem[];
 };
 
-const ORDER_STATUSES: { label: string; value: OrderStatus }[] = [
-  { label: '전체', value: '' },
-  { label: '결제완료', value: 'PENDING' },
-  { label: '발송 처리', value: 'PROCESSING' },
-  { label: '배송 준비', value: 'READY' },
-  { label: '배송중', value: 'SHIPPING' },
-  { label: '배송 완료', value: 'DELIVERED' },
-];
+// 상태 라벨 매핑
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  '': '전체',
+  PENDING: '주문 완료',
+  PROCESSING: '발송 처리',
+  READY: '배송 준비',
+  SHIPPING: '배송중',
+  DELIVERED: '배송 완료',
+};
+
+// 상태별 색상
+const STATUS_COLORS: Record<OrderStatus, string> = {
+  '': '#00000000',
+  PENDING: '#ef2c00ff',
+  PROCESSING: '#f39c12',
+  READY: '#2980b9',
+  SHIPPING: '#27ae60',
+  DELIVERED: '#8e44ad',
+};
+
+//  날짜 포맷 함수 (예: 25.07.25)
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear().toString().slice(2);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
+};
 
 export default function OrderManageScreen() {
   const { token } = useAuthStore();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AdminStackParamList>>();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -51,7 +76,7 @@ export default function OrderManageScreen() {
   const [searchText, setSearchText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // ✅ useCallback으로 fetchOrders 정의
+  //  주문 데이터 가져오기
   const fetchOrders = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -78,12 +103,11 @@ export default function OrderManageScreen() {
     }
   }, [token]);
 
-  // ✅ token 변경 시 주문 데이터 가져오기
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // ✅ 검색 및 상태 필터 적용
+  // 필터링 로직
   useEffect(() => {
     let filtered = [...orders];
 
@@ -105,41 +129,62 @@ export default function OrderManageScreen() {
     setFilteredOrders(filtered);
   }, [orders, selectedStatus, searchText]);
 
-  // ✅ 주문 렌더링
-  const renderOrder = ({ item }: { item: Order }) => (
-    <View style={styles.orderItem}>
-      <Text style={styles.orderNum}>{item.orderNum}</Text>
-      <Text>{new Date(item.orderAt).toLocaleString()}</Text>
-      <Text>상태: {item.orderStatus}</Text>
-      {item.items.map(i => (
-        <Text key={i.orderItemId} style={styles.productName}>
-          {i.productName} x {i.quantity} ({i.price.toLocaleString()}원)
+  // 주문 카드 렌더링
+  const renderOrder = ({ item }: { item: Order }) => {
+    const statusColor = STATUS_COLORS[item.orderStatus] || '#666';
+    const productPreview = item.items
+      .slice(0, 2)
+      .map(i => `${i.productName} x${i.quantity}`)
+      .join(', ');
+    const extraCount =
+      item.items.length > 2 ? ` +${item.items.length - 2}개` : '';
+    const totalPrice = item.items.reduce(
+      (sum, i) => sum + i.price * i.quantity,
+      0,
+    );
+
+    return (
+      <TouchableOpacity
+        style={styles.orderCard}
+        onPress={() =>
+          navigation.navigate('AdminOrderDetail', { orderId: item.orderId })
+        }
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.orderNum}>{item.orderNum}</Text>
+          <Text style={[styles.orderStatus, { color: statusColor }]}>
+            {STATUS_LABELS[item.orderStatus]}
+          </Text>
+        </View>
+        <Text style={styles.orderDate}>{formatDate(item.orderAt)}</Text>
+        <Text style={styles.productPreview}>{productPreview + extraCount}</Text>
+        <Text style={styles.totalPrice}>
+          총 금액: ₩{totalPrice.toLocaleString()}
         </Text>
-      ))}
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Header title="주문 관리" showRightIcons={false} hideBackButton={false} />
       <View style={styles.filterContainer}>
-        {ORDER_STATUSES.map(status => (
+        {Object.entries(STATUS_LABELS).map(([key, label]) => (
           <TouchableOpacity
-            key={status.value}
+            key={key}
             style={[
               styles.statusButton,
-              selectedStatus === status.value && styles.statusButtonActive,
+              selectedStatus === key && styles.statusButtonActive,
             ]}
-            onPress={() => setSelectedStatus(status.value)}
+            onPress={() => setSelectedStatus(key as OrderStatus)}
           >
             <Text
               style={[
                 styles.statusButtonText,
-                selectedStatus === status.value &&
-                  styles.statusButtonTextActive,
+                selectedStatus === key && styles.statusButtonTextActive,
               ]}
             >
-              {status.label}
+              {label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -169,12 +214,14 @@ export default function OrderManageScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f9f9f9' },
   filterContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
     flexWrap: 'wrap',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   statusButton: {
     paddingVertical: 6,
@@ -185,42 +232,76 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusButtonActive: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#000',
   },
   statusButtonText: {
     color: '#333',
+    fontSize: 14,
   },
   statusButtonTextActive: {
     color: 'white',
+    fontWeight: 'bold',
   },
   searchInput: {
-    marginHorizontal: 10,
-    marginBottom: 10,
+    margin: 10,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     height: 40,
+    backgroundColor: '#fff',
   },
-  orderItem: {
+  orderCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 10,
+    marginVertical: 6,
     padding: 15,
-    borderBottomColor: '#ddd',
-    borderBottomWidth: 1,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   orderNum: {
     fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 16,
+    color: '#333',
   },
-  productName: {
-    marginLeft: 10,
+  orderStatus: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  orderDate: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  productPreview: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  totalPrice: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
   },
   loadingText: {
     textAlign: 'center',
     marginTop: 20,
+    fontSize: 16,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 40,
+    fontSize: 16,
+    color: '#999',
   },
   flatListContent: {
     paddingBottom: 100,
