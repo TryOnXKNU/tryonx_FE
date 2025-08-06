@@ -159,7 +159,14 @@ export type AdminStackParamList = {
 
   AdminAsk: undefined;
   AdminAskDetail: { askId: number };
-  AdminAnswer: { askId: number; title: string };
+  AdminAnswer: {
+    askId: number;
+    title: string;
+    content: string;
+    imgUrl: string;
+    productName: string;
+    size: string;
+  };
 
   RecentMembers: undefined;
   AllMembers: undefined;

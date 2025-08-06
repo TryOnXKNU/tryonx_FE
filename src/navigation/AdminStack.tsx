@@ -18,7 +18,7 @@ import AllMembersScreen from '../screens/admin/AllMembersScreen';
 import AdminProductDetailScreen from '../screens/admin/AdminProductDetailScreen';
 import ProductAddScreen from '../screens/admin/ProductAddScreen';
 import ProductAddImageScreen from '../screens/admin/ProductAddImageScreen';
-// import AdminProductEditScreen from '../screens/admin/AdminProductEditScreen';
+import AdminProductEditScreen from '../screens/admin/AdminProductEditScreen';
 
 import MemberDetailScreen from '../screens/admin/MemberDetailScreen';
 import MemberOrdersScreen from '../screens/admin/MemberOrdersScreen';
@@ -104,10 +104,10 @@ export default function AdminStack() {
       />
       <Stack.Screen name="ProductAdd" component={ProductAddScreen} />
       <Stack.Screen name="ProductAddImage" component={ProductAddImageScreen} />
-      {/* <Stack.Screen
+      <Stack.Screen
         name="AdminProductEdit"
         component={AdminProductEditScreen}
-      /> */}
+      />
       <Stack.Screen name="MemberDetail" component={MemberDetailScreen} />
       <Stack.Screen name="MemberOrders" component={MemberOrdersScreen} />
       <Stack.Screen
