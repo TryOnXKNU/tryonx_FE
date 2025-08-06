@@ -45,6 +45,7 @@ export default function AdminAskScreen() {
 type InquiryItem = {
   askId: number;
   title: string;
+  content: string;
   productName: string;
   size: string;
   imgUrl: string;
@@ -80,6 +81,10 @@ function NewInquiryTab() {
     navigation.navigate('AdminAnswer', {
       askId: item.askId,
       title: item.title,
+      content: item.content,
+      imgUrl: item.imgUrl,
+      productName: item.productName,
+      size: item.size,
     });
   };
 

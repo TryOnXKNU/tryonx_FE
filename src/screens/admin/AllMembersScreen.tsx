@@ -77,7 +77,7 @@ export default function AllMembersScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="전체 회원" />
+      <Header title="전체 회원" showRightIcons={false} />
       <FlatList
         data={members}
         keyExtractor={item => item.memberId.toString()}

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -78,9 +79,11 @@ export default function ProductDetailScreen() {
     }
   }, [token, productId]);
 
-  useEffect(() => {
-    fetchProductDetail();
-  }, [fetchProductDetail]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProductDetail(); // 화면이 포커스될 때마다 데이터 새로 불러옴
+    }, [fetchProductDetail]),
+  );
 
   const handleDelete = async () => {
     if (!token) {
@@ -140,7 +143,7 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="상품 상세" />
+      <Header title="상품 상세" showRightIcons={false} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* 이미지 */}
         <ScrollView horizontal pagingEnabled>

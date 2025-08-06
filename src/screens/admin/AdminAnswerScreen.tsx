@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Text as RNText,
   Alert,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AdminStackParamList } from '../../navigation/types';
@@ -19,7 +21,7 @@ const SERVER_URL = 'http://localhost:8080';
 type Props = NativeStackScreenProps<AdminStackParamList, 'AdminAnswer'>;
 
 export default function AdminAnswerScreen({ route, navigation }: Props) {
-  const { askId, title } = route.params;
+  const { askId, title, content, imgUrl, productName, size } = route.params;
   const token = useAuthStore(state => state.token);
   const [answer, setAnswer] = useState('');
 
@@ -48,8 +50,21 @@ export default function AdminAnswerScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       <Header title="답변 등록" hideBackButton={false} showRightIcons={false} />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* 상품 이미지 */}
+        <Image
+          source={{ uri: `${SERVER_URL}${imgUrl}` }}
+          style={styles.image}
+        />
+
+        {/* 문의 정보 */}
         <Text style={styles.title}>{title}</Text>
+        <Text style={styles.product}>
+          {productName} · {size}
+        </Text>
+        <Text style={styles.contentText}>{content}</Text>
+
+        {/* 답변 입력 */}
         <TextInput
           placeholder="답변 내용을 입력하세요."
           style={styles.input}
@@ -61,17 +76,20 @@ export default function AdminAnswerScreen({ route, navigation }: Props) {
         <TouchableOpacity style={styles.buttonContainer} onPress={submitAnswer}>
           <RNText style={styles.buttonText}>등록</RNText>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 16, flex: 1 },
-  title: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: '#111' },
+  content: { padding: 16 },
+  image: { width: '100%', height: 200, borderRadius: 8, marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: '#111' },
+  product: { fontSize: 14, color: '#777', marginBottom: 12 },
+  contentText: { fontSize: 16, color: '#333', marginBottom: 20 },
   input: {
-    height: 150, // 입력창 높이 제한
+    height: 150,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
@@ -86,6 +104,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    marginBottom: 40,
   },
   buttonText: {
     color: '#fff',
