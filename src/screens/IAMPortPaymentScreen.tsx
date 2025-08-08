@@ -71,7 +71,10 @@ export default function IAMPortPaymentScreen({ route, navigation }: Props) {
       method,
     } = info;
 
-    const pointsToUse = parseInt(usedPoint || '0', 10);
+    const pointsToUse =
+      typeof usedPoint === 'string'
+        ? parseInt(usedPoint || '0', 10)
+        : usedPoint ?? 0;
 
     let body: any;
 
@@ -152,7 +155,11 @@ export default function IAMPortPaymentScreen({ route, navigation }: Props) {
 
       navigation.replace('OrderComplete', {
         orderId,
-        productId: isDirectOrder ? productId : selectedItems?.[0].productId,
+        productId: isDirectOrder
+          ? productId
+          : selectedItems && selectedItems.length > 0
+          ? selectedItems[0].productId
+          : 0, // 0 대신 적절한 기본값 넣기
       });
     } catch (error) {
       console.error('주문 요청 중 예외 발생:', error);
@@ -163,7 +170,7 @@ export default function IAMPortPaymentScreen({ route, navigation }: Props) {
 
   return (
     <IMP.Payment
-      userCode={''}
+      userCode={'imp85468817'}
       loading={<></>}
       data={{
         pg: paymentInfo.pg,

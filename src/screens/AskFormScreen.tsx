@@ -15,7 +15,8 @@ import {
 import Header from '../components/Header';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/core';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'react-native-image-picker';
 
 const SERVER_URL = 'http://localhost:8080';
