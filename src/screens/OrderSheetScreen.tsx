@@ -10,23 +10,40 @@ import {
   TextInput,
   Image,
 } from 'react-native';
-import { RouteProp, useIsFocused } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+
+import { useIsFocused } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+
 import { useAuthStore } from '../store/useAuthStore';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import type { RootStackParamList } from '../navigation/types';
 
-type OrderSheetScreenRouteProp = RouteProp<RootStackParamList, 'OrderSheet'>;
-type OrderSheetScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  'OrderSheet'
->;
-
-type Props = {
-  route: OrderSheetScreenRouteProp;
-  navigation: OrderSheetScreenNavigationProp;
+export type RootStackParamList = {
+  OrderSheet:
+    | { productId: number; size: string; quantity: number }
+    | { selectedItems: SelectedItem[] };
+  Payment: { paymentInfo: PaymentInfo };
+  Login: undefined;
 };
+
+type SelectedItem = {
+  productId: number;
+  size: string;
+  quantity: number;
+};
+
+type PaymentInfo = {
+  pg: string;
+  method: string;
+  name: string;
+  amount: number;
+  buyerName: string;
+  buyerTel: string;
+  buyerAddr: string;
+  productId: number;
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, 'OrderSheet'>;
 
 type OrderPreviewResponse = {
   memberInfo: {
@@ -50,30 +67,21 @@ type OrderPreviewResponse = {
 };
 
 export default function OrderSheetScreen({ route, navigation }: Props) {
-  //const { productId, size, quantity } = route.params;
-  //const { token } = useAuthStore();
   const token = useAuthStore(state => state.token);
   const isFocused = useIsFocused();
 
-  // route.params가 두 가지 케이스 중 하나임을 체크
   const isDirectOrder =
     'productId' in route.params &&
     'size' in route.params &&
     'quantity' in route.params;
 
-  // 바로구매용 파라미터
   const productId = isDirectOrder ? route.params.productId : undefined;
   const size = isDirectOrder ? route.params.size : undefined;
   const quantity = isDirectOrder ? route.params.quantity : undefined;
 
-  // 장바구니용 파라미터
-  const selectedItems = !isDirectOrder ? route.params.selectedItems : undefined;
-
-  // const totalPayment = !isDirectOrder ? route.params.totalPayment : undefined;
-  // const deliveryFee = !isDirectOrder ? route.params.deliveryFee : undefined;
-  // const expectedPoints = !isDirectOrder
-  //   ? route.params.expectedPoints
-  //   : undefined;
+  const selectedItems = !isDirectOrder
+    ? (route.params as { selectedItems: SelectedItem[] }).selectedItems
+    : undefined;
 
   const [loading, setLoading] = useState(false);
   const [orderPreview, setOrderPreview] = useState<OrderPreviewResponse | null>(
@@ -83,9 +91,6 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
   const [selectedPayment, setSelectedPayment] = useState<
     'kakao' | 'card' | null
   >(null);
-
-  //  배송 방법 선택
-
   const [requestOpen, setRequestOpen] = useState(false);
   const deliveryRequests = [
     '문 앞에 놓아 주세요',
@@ -94,7 +99,6 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
     '직접 전달 부탁드립니다',
   ];
   const [selectedRequest, setSelectedRequest] = useState(deliveryRequests[0]);
-
   const [finalAmountAfterPoint, setFinalAmountAfterPoint] = useState<number>(0);
 
   useEffect(() => {
@@ -108,23 +112,17 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
     const fetchOrderPreview = async () => {
       setLoading(true);
       try {
-        let body;
-
-        if (isDirectOrder) {
-          // 바로구매
-          body = {
-            items: [{ productId, size, quantity }],
-          };
-        } else {
-          // 장바구니 주문
-          body = {
-            items: selectedItems?.map(item => ({
-              productId: item.productId,
-              size: item.size,
-              quantity: item.quantity,
-            })),
-          };
-        }
+        const body = isDirectOrder
+          ? {
+              items: [{ productId, size, quantity }],
+            }
+          : {
+              items: selectedItems?.map(item => ({
+                productId: item.productId,
+                size: item.size,
+                quantity: item.quantity,
+              })),
+            };
 
         const response = await fetch(
           'http://localhost:8080/api/v1/order/preview',
@@ -140,13 +138,12 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('서버 응답 에러:', errorText);
-          throw new Error('주문 미리보기 요청 실패');
+          throw new Error(errorText || '주문 미리보기 요청 실패');
         }
 
         const data: OrderPreviewResponse = await response.json();
         setOrderPreview(data);
-        setFinalAmountAfterPoint(data.finalAmount); // 초기값
+        setFinalAmountAfterPoint(data.finalAmount);
       } catch (error) {
         Alert.alert('오류', (error as Error).message);
       } finally {
@@ -169,17 +166,44 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
   useEffect(() => {
     if (!orderPreview) return;
     const point = parseInt(usedPoint || '0', 10);
-
-    const newAmount = Math.max(orderPreview.finalAmount - point, 0);
-    setFinalAmountAfterPoint(newAmount);
+    setFinalAmountAfterPoint(Math.max(orderPreview.finalAmount - point, 0));
   }, [usedPoint, orderPreview]);
 
-  const handleKakaoPay = () => {
-    setSelectedPayment('kakao');
-  };
+  const handleKakaoPay = () => setSelectedPayment('kakao');
+  const handleCard = () => setSelectedPayment('card');
 
-  const handleCard = () => {
-    setSelectedPayment('card');
+  const handlePlaceOrder = async () => {
+    if (!token) {
+      Alert.alert('로그인이 필요합니다.');
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      return;
+    }
+
+    const pointsToUse = parseInt(usedPoint || '0', 10);
+    if (pointsToUse > orderPreview!.memberInfo.availablePoint) {
+      Alert.alert('포인트가 부족합니다.');
+      return;
+    }
+
+    if (!selectedPayment) {
+      Alert.alert('결제 수단을 선택하세요.');
+      return;
+    }
+
+    const pg = selectedPayment === 'kakao' ? 'kakaopay.TC0ONETIME' : 'nice_v2';
+
+    const paymentInfo: PaymentInfo = {
+      pg,
+      method: 'card',
+      name: '상품 주문',
+      amount: finalAmountAfterPoint,
+      buyerName: orderPreview!.memberInfo.name,
+      buyerTel: orderPreview!.memberInfo.phone,
+      buyerAddr: orderPreview!.memberInfo.address ?? '',
+      productId: isDirectOrder ? productId! : selectedItems![0].productId,
+    };
+
+    navigation.navigate('Payment', { paymentInfo, token });
   };
 
   if (loading || !orderPreview) {
@@ -189,90 +213,6 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
       </View>
     );
   }
-
-  // 결제 버튼
-  const handlePlaceOrder = async () => {
-    if (!token) {
-      Alert.alert('로그인이 필요합니다.');
-      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-      return;
-    }
-
-    const pointsToUse = parseInt(usedPoint || '0', 10);
-    if (pointsToUse > orderPreview?.memberInfo.availablePoint!) {
-      Alert.alert('포인트가 부족합니다.');
-      return;
-    }
-    if (pointsToUse > finalAmountAfterPoint) {
-      Alert.alert('사용할 포인트가 결제 금액을 초과할 수 없습니다.');
-      return;
-    }
-    if (!selectedPayment) {
-      Alert.alert('결제 수단을 선택하세요.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let body;
-
-      if (isDirectOrder) {
-        body = {
-          items: [{ productId, size, quantity }],
-          point: pointsToUse,
-          paymentMethod: selectedPayment,
-          deliveryRequest: selectedRequest,
-        };
-      } else {
-        body = {
-          items: selectedItems?.map(item => ({
-            productId: item.productId,
-            size: item.size,
-            quantity: item.quantity,
-          })),
-          point: pointsToUse,
-          paymentMethod: selectedPayment,
-          deliveryRequest: selectedRequest,
-        };
-      }
-
-      const response = await fetch('http://localhost:8080/api/v1/order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('주문 실패:', errorText);
-        throw new Error('주문 처리에 실패했습니다.');
-      }
-
-      // 응답에서 orderId 받는다고 가정
-      const responseData = await response.json();
-      const orderId = responseData.orderId;
-
-      Alert.alert('주문 성공', '주문이 정상적으로 처리되었습니다.', [
-        {
-          text: '확인',
-          onPress: () =>
-            navigation.replace('OrderComplete', {
-              orderId,
-              productId: isDirectOrder
-                ? productId!
-                : selectedItems?.[0].productId!,
-            }),
-        },
-      ]);
-    } catch (error) {
-      Alert.alert('오류', (error as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -379,7 +319,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
               <Text
                 style={[
                   styles.paymentButtonText,
-                  selectedPayment === 'kakao' && styles.selectedText,
+                  selectedPayment === 'kakao' && styles.paySelectedText,
                 ]}
               >
                 카카오페이
@@ -395,7 +335,7 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
               <Text
                 style={[
                   styles.paymentButtonText,
-                  selectedPayment === 'card' && styles.selectedText,
+                  selectedPayment === 'card' && styles.paySelectedText,
                 ]}
               >
                 카드결제
@@ -404,7 +344,6 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
           </View>
         </View>
 
-        {/* 결제 요약 */}
         {/* 결제 요약 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>결제 정보</Text>
@@ -442,19 +381,14 @@ export default function OrderSheetScreen({ route, navigation }: Props) {
             </Text>
           </View>
         </View>
-      </ScrollView>
 
-      <View style={styles.footer}>
         <TouchableOpacity style={styles.button} onPress={handlePlaceOrder}>
-          <Text style={styles.buttonText}>
-            {finalAmountAfterPoint.toLocaleString()}원 결제하기
-          </Text>
+          <Text style={styles.buttonText}>결제하기</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scrollContent: { padding: 20, paddingBottom: 140 },
@@ -509,6 +443,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   selectedText: {
+    fontWeight: '700',
+    color: '#000',
+  },
+  paySelectedText: {
     fontWeight: '700',
     color: '#fff',
   },
