@@ -20,6 +20,12 @@ export type PaymentInfo = {
   buyerTel: string;
   buyerAddr: string;
   productId: number;
+  isDirectOrder?: boolean; // 바로구매 여부
+  selectedItems?: CartItem[]; // 장바구니 선택 아이템
+  selectedRequest?: string; // 요청사항
+  size?: string; // 사이즈
+  quantity?: number; // 수량
+  usedPoint?: number; // 사용한 포인트
 };
 
 export type RootStackParamList = {

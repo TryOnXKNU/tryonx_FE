@@ -1,7 +1,8 @@
 {
-  "extends": "@react-native/typescript-config",
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext"
-  }
+  "extends": "@react-native/typescript-config"
+  // "compilerOptions": {
+  //   "module": "NodeNext",
+  //   "moduleResolution": "NodeNext",
+  //   "types": ["@react-navigation/native"]
+  // }
 }
