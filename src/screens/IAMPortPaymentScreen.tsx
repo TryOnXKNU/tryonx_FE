@@ -163,7 +163,7 @@ export default function IAMPortPaymentScreen({ route, navigation }: Props) {
 
   return (
     <IMP.Payment
-      userCode={'imp85468817'}
+      userCode={''}
       loading={<></>}
       data={{
         pg: paymentInfo.pg,
