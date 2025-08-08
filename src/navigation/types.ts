@@ -10,6 +10,18 @@ export type CartItem = {
   availableSizes: string[];
 };
 
+// types.ts 혹은 적절한 타입 정의 파일에서 export 추가
+export type PaymentInfo = {
+  pg: string;
+  method: string;
+  name: string;
+  amount: number;
+  buyerName: string;
+  buyerTel: string;
+  buyerAddr: string;
+  productId: number;
+};
+
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -21,6 +33,11 @@ export type RootStackParamList = {
 
   MyPage: undefined;
   PointHistory: undefined;
+
+  Payment: {
+    paymentInfo: PaymentInfo;
+    token: string;
+  };
 
   //장바구니
   Cart: undefined;

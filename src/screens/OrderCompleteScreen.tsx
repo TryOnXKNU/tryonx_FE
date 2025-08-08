@@ -9,7 +9,6 @@ type Props = {
 export default function OrderCompleteScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
-      {/* <Header title="결제 완료" showRightIcons={true} hideBackButton={true} /> */}
       <Header
         title="결제 완료"
         showRightIcons={true}

@@ -20,6 +20,8 @@ import NotificationScreen from '../screens/NotificationScreen';
 import CategoryListScreen from '../screens/CategoryListScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
+import IAMPortPaymentScreen from '../screens/IAMPortPaymentScreen';
+
 import ReviewListScreen from '../screens/ReviewListScreen';
 
 import MyOrderListScreen from '../screens/MyOrderListScreen';
@@ -51,21 +53,19 @@ export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={UserMainStack} />
-
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="SearchOutput" component={SearchOutputScreen} />
-
       <Stack.Screen
         name="EditProfileImage"
         component={EditProfileImageScreen}
       />
       <Stack.Screen name="MyProfile" component={MyProfileScreen} />
       <Stack.Screen name="PointHistory" component={PointHistoryScreen} />
-
       <Stack.Screen name="EditNickname" component={EditNicknameScreen} />
       <Stack.Screen name="EditAddress" component={EditAddressScreen} />
       <Stack.Screen name="EditPassword" component={EditPasswordScreen} />
       <Stack.Screen name="EditBodyInfo" component={EditBodyInfoScreen} />
+      <Stack.Screen name="Payment" component={IAMPortPaymentScreen} />
 
       <Stack.Screen name="Notification" component={NotificationScreen} />
       <Stack.Screen name="CategoryList" component={CategoryListScreen} />
@@ -81,15 +81,12 @@ export default function MainStack() {
       <Stack.Screen name="ReviewWrite" component={ReviewWriteScreen} />
       <Stack.Screen name="MyReviewList" component={MyReviewListScreen} />
       <Stack.Screen name="RecentItem" component={RecentItemScreen} />
-
       <Stack.Screen name="ExchangeRequest" component={ExchangeRequestScreen} />
       <Stack.Screen name="ExchangeList" component={ExchangeListScreen} />
       <Stack.Screen name="ExchangeDetail" component={ExchangeDetailScreen} />
-
       <Stack.Screen name="ReturnRequest" component={ReturnRequestScreen} />
       <Stack.Screen name="ReturnList" component={ReturnListScreen} />
       <Stack.Screen name="ReturnDetail" component={ReturnDetailScreen} />
-
       <Stack.Screen name="Cart" component={CartScreen} />
     </Stack.Navigator>
   );
