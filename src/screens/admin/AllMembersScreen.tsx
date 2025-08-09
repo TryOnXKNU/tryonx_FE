@@ -58,16 +58,14 @@ export default function AllMembersScreen() {
 
   const renderItem = ({ item }: { item: Member }) => (
     <View style={styles.memberCard}>
-      {item.profileUrl && item.profileUrl.trim() !== '' ? (
-        <Image
-          source={{ uri: `${BASE_URL}${item.profileUrl}` }}
-          style={styles.profileImage}
-        />
-      ) : (
-        <View style={styles.defaultProfile}>
-          <Text style={styles.defaultProfileText}>{item.name.charAt(0)}</Text>
-        </View>
-      )}
+      <Image
+        source={
+          item.profileUrl && item.profileUrl.trim() !== ''
+            ? { uri: `${BASE_URL}${item.profileUrl}` }
+            : require('../../assets/images/logo.png')
+        }
+        style={styles.profileImage}
+      />
       <View>
         <Text style={styles.memberName}>{item.name}</Text>
         <Text style={styles.memberId}>ID: {item.memberId}</Text>

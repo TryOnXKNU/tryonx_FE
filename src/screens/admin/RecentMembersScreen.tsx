@@ -56,11 +56,14 @@ export default function RecentMembersScreen() {
 
   const renderItem = ({ item }: { item: Member }) => (
     <View style={styles.memberCard}>
-      {item.profileUrl && item.profileUrl.trim() !== '' ? (
-        <Image source={{ uri: item.profileUrl }} style={styles.profileImage} />
-      ) : (
-        <View style={styles.defaultProfile} />
-      )}
+      <Image
+        source={
+          item.profileUrl && item.profileUrl.trim() !== ''
+            ? { uri: `${'http://localhost:8080'}${item.profileUrl}` }
+            : require('../../assets/images/logo.png')
+        }
+        style={styles.profileImage}
+      />
       <View>
         <Text style={styles.memberName}>{item.name}</Text>
         <Text style={styles.memberId}>ID: {item.memberId}</Text>

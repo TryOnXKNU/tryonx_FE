@@ -263,11 +263,11 @@ function LoginScreen() {
                   <ActivityIndicator color="#000" />
                 ) : (
                   <View style={styles.kakaoInner}>
-                    <Icon
+                    {/* <Icon
                       name="chatbubble-ellipses-outline"
                       size={18}
                       color="#000"
-                    />
+                    /> */}
                     <Text style={styles.kakaoButtonText}>카카오 로그인</Text>
                   </View>
                 )}

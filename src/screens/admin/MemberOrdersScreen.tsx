@@ -59,8 +59,30 @@ export default function MemberOrdersScreen({ route }: Props) {
         setOrders(ordersData);
 
         if (ordersData.length > 0) {
-          const { profileUrl, name, memberId } = ordersData[0];
-          setMemberInfo({ profileUrl, name, memberId });
+          const { profileUrl, name, memberId: mid } = ordersData[0];
+          setMemberInfo({ profileUrl, name, memberId: mid });
+        } else {
+          // 주문이 없어도 상단 회원 정보는 노출되도록 회원 정보를 별도 조회
+          return fetch(`${API_BASE}/${memberId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+          })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+              if (data) {
+                const info: MemberInfo = {
+                  profileUrl: data.profileUrl ?? null,
+                  name: data.name,
+                  memberId: data.memberId,
+                };
+                setMemberInfo(info);
+              }
+            })
+            .catch(() => {
+              // 회원 정보 조회 실패는 무시 (상단만 비표시)
+            });
         }
       })
       .catch(() => setOrders([]))
@@ -97,9 +119,7 @@ export default function MemberOrdersScreen({ route }: Props) {
 
   if (loading)
     return <ActivityIndicator style={styles.loadingIndicator} size="large" />;
-
-  if (!orders.length)
-    return <Text style={styles.noOrders}>주문 내역이 없습니다.</Text>;
+  // orders.length가 0일 때는 그냥 계속 진행하도록 처리
 
   return (
     <View style={styles.screen}>
@@ -118,18 +138,14 @@ export default function MemberOrdersScreen({ route }: Props) {
             {/* 회원 정보 섹션 */}
             {memberInfo && (
               <View style={styles.profileSection}>
-                {memberInfo.profileUrl ? (
-                  <Image
-                    source={{
-                      uri: `http://localhost:8080${memberInfo.profileUrl}`,
-                    }}
-                    style={styles.profileImage}
-                  />
-                ) : (
-                  <View style={[styles.profileImage, styles.noImage]}>
-                    <Text style={styles.noImageText}>No Image</Text>
-                  </View>
-                )}
+                <Image
+                  source={
+                    memberInfo.profileUrl
+                      ? { uri: `http://localhost:8080${memberInfo.profileUrl}` }
+                      : require('../../assets/images/logo.png')
+                  }
+                  style={styles.profileImage}
+                />
                 <View style={styles.profileInfo}>
                   <Text style={styles.name}>{memberInfo.name}</Text>
                   <Text> {memberInfo.memberId}</Text>
@@ -165,6 +181,9 @@ export default function MemberOrdersScreen({ route }: Props) {
             </View>
           </View>
         )}
+        ListEmptyComponent={
+          <Text style={styles.noOrdersText}>주문 내역이 없습니다.</Text>
+        }
       />
     </View>
   );
@@ -186,6 +205,12 @@ const styles = StyleSheet.create({
     marginTop: 50,
     textAlign: 'center',
     fontSize: 16,
+  },
+  noOrdersText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 12,
+    marginBottom: 8,
   },
   profileSection: {
     flexDirection: 'row',

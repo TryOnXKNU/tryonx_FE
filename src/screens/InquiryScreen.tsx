@@ -23,6 +23,16 @@ import type { RootStackParamList } from '../navigation/types';
 const SERVER_URL = 'http://localhost:8080';
 const Tab = createMaterialTopTabNavigator();
 
+function formatShortDate(dateString?: string | null): string {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '-';
+  const yy = String(date.getFullYear() % 100).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yy}.${mm}.${dd}`;
+}
+
 export default function InquiryScreen() {
   return (
     <View style={styles.container}>
@@ -293,7 +303,11 @@ function MyInquiriesTab() {
           </View>
 
           <Text style={styles.inquiryDate}>
-            {new Date(item.createdAt).toLocaleDateString('ko-KR')}
+            {isWaiting
+              ? formatShortDate(item.createdAt)
+              : formatShortDate(
+                  detailMap[item.askId]?.answeredAt || item.createdAt,
+                )}
           </Text>
         </View>
 
@@ -324,10 +338,19 @@ function MyInquiriesTab() {
                   </View>
                 )}
 
-                <Text style={styles.detailText}>
-                  <Text style={styles.boldLabel}>답변:</Text>{' '}
-                  {detailMap[item.askId].answer || '아직 답변이 없습니다.'}
-                </Text>
+                <View style={styles.answerContainer}>
+                  <View style={styles.answerHeader}>
+                    <Text style={styles.answerTitle}>답변</Text>
+                    {!isWaiting && (
+                      <Text style={styles.inquiryDate}>
+                        {formatShortDate(detailMap[item.askId].answeredAt)}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.answerContent}>
+                    {detailMap[item.askId].answer || '아직 답변이 없습니다.'}
+                  </Text>
+                </View>
               </>
             ) : (
               <Text style={styles.detailText}>로딩 중...</Text>
@@ -476,6 +499,30 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#eee',
+  },
+  answerContainer: {
+    marginTop: 6,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+    padding: 10,
+  },
+  answerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  answerTitle: {
+    fontWeight: '700',
+    color: '#111827',
+    fontSize: 14,
+  },
+  answerContent: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 22,
   },
   detailText: {
     fontSize: 14,
