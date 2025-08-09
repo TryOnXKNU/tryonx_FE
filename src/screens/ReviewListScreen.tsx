@@ -16,6 +16,22 @@ import { useAuthStore } from '../store/useAuthStore';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 
+const SERVER_URL = 'http://localhost:8080';
+
+function toImageUri(maybeUrl?: string | null): string | null {
+  if (!maybeUrl) return null;
+  const trimmed = String(maybeUrl).trim();
+  if (!trimmed) return null;
+  const absolute = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `${SERVER_URL}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  try {
+    return encodeURI(absolute);
+  } catch {
+    return null;
+  }
+}
+
 type ProductReview = {
   memberNickname: string;
   height: number;
@@ -250,14 +266,14 @@ export default function ReviewListScreen() {
           {reviews.map((review, index) => (
             <View key={index} style={styles.reviewItem}>
               <View style={styles.headerRow}>
-                {review.profileImageUrl && (
-                  <Image
-                    source={{
-                      uri: `http://localhost:8080${review.profileImageUrl}`,
-                    }}
-                    style={styles.profileImage}
-                  />
-                )}
+                <Image
+                  source={
+                    toImageUri(review.profileImageUrl)
+                      ? { uri: toImageUri(review.profileImageUrl)! }
+                      : require('../assets/images/logo.png')
+                  }
+                  style={styles.profileImage}
+                />
                 <View style={styles.infoColumn}>
                   <Text style={styles.author}>{review.memberNickname}</Text>
                   <StarRating rating={review.rating} />
@@ -276,14 +292,17 @@ export default function ReviewListScreen() {
                   showsHorizontalScrollIndicator={false}
                   style={styles.reviewImagesContainer}
                 >
-                  {review.reviewImages.map((img, idx) => (
-                    <Image
-                      key={idx}
-                      source={{ uri: `http://localhost:8080${img}` }}
-                      style={styles.reviewImage}
-                      resizeMode="cover"
-                    />
-                  ))}
+                  {review.reviewImages.map((img, idx) => {
+                    const uri = toImageUri(img);
+                    return (
+                      <Image
+                        key={idx}
+                        source={{ uri: uri || `${SERVER_URL}${img}` }}
+                        style={styles.reviewImage}
+                        resizeMode="cover"
+                      />
+                    );
+                  })}
                 </ScrollView>
               )}
             </View>

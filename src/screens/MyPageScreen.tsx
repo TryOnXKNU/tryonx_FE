@@ -163,9 +163,11 @@ export default function MyPageScreen() {
         <View style={styles.profileCard}>
           <TouchableOpacity onPress={handleEditProfileImage}>
             <Image
-              source={{
-                uri: profileImage ?? '../assets/images/logo.png', // 프로필 이미지 없으면 기본 이미지
-              }}
+              source={
+                profileImage
+                  ? { uri: encodeURI(profileImage) }
+                  : require('../assets/images/logo.png')
+              }
               style={styles.avatar}
             />
           </TouchableOpacity>

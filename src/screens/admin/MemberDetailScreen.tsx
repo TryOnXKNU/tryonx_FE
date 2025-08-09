@@ -86,16 +86,14 @@ export default function MemberDetailScreen({ route }: Props) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* 상단 프로필 영역 */}
         <View style={styles.profileSection}>
-          {member.profileUrl ? (
-            <Image
-              source={{ uri: `http://localhost:8080${member.profileUrl}` }}
-              style={styles.profileImage}
-            />
-          ) : (
-            <View style={[styles.profileImage, styles.noImage]}>
-              <Text style={styles.noImageText}>No Image</Text>
-            </View>
-          )}
+          <Image
+            source={
+              member.profileUrl
+                ? { uri: `http://localhost:8080${member.profileUrl}` }
+                : require('../../assets/images/logo.png')
+            }
+            style={styles.profileImage}
+          />
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{member.name}</Text>
             <View style={styles.badgesRow}>

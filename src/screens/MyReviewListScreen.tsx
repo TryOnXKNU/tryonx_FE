@@ -18,6 +18,25 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/types';
 
 const SERVER_URL = 'http://localhost:8080';
+const PLACEHOLDER_IMG_80 = 'https://via.placeholder.com/80';
+const PLACEHOLDER_IMG_100 = 'https://via.placeholder.com/100';
+
+function toImageUri(
+  maybeUrl?: string | null,
+  fallback: string = PLACEHOLDER_IMG_100,
+) {
+  if (!maybeUrl) return fallback;
+  const trimmed = String(maybeUrl).trim();
+  if (!trimmed) return fallback;
+  const absolute = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `${SERVER_URL}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  try {
+    return encodeURI(absolute);
+  } catch {
+    return fallback;
+  }
+}
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'ProductDetail'>;
 
@@ -103,7 +122,9 @@ export default function MyReviewListScreen() {
             }
           >
             <Image
-              source={{ uri: `${SERVER_URL}${item.productImage}` }}
+              source={{
+                uri: toImageUri(item.productImage, PLACEHOLDER_IMG_80),
+              }}
               style={styles.productImage}
             />
           </Pressable>
@@ -138,7 +159,7 @@ export default function MyReviewListScreen() {
         {item.reviewImages.map((img, idx) => (
           <Image
             key={idx}
-            source={{ uri: `${SERVER_URL}${img}` }}
+            source={{ uri: toImageUri(img, PLACEHOLDER_IMG_100) }}
             style={styles.reviewImage}
           />
         ))}

@@ -30,17 +30,16 @@ type Member = {
 
 // 단일 검색창으로 회원명/회원번호 동시 검색
 
-const ProfileImage = ({ uri }: { uri: string }) => {
-  if (uri) {
-    return (
-      <Image
-        source={{ uri: `${SERVER_URL}${uri}` }}
-        style={styles.profileImage}
-      />
-    );
-  }
-  return <View style={[styles.profileImage, styles.placeholder]} />;
-};
+const ProfileImage = ({ uri }: { uri: string }) => (
+  <Image
+    source={
+      uri && uri.trim() !== ''
+        ? { uri: `${SERVER_URL}${uri}` }
+        : require('../../assets/images/logo.png')
+    }
+    style={styles.profileImage}
+  />
+);
 
 export default function UserManageScreen() {
   const token = useAuthStore(state => state.token);

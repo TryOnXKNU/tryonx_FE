@@ -24,6 +24,19 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { saveRecentItem } from '../utils/recentStorage';
 
 const SERVER_URL = 'http://localhost:8080';
+function toImageUri(maybeUrl?: string | null) {
+  if (!maybeUrl) return null;
+  const trimmed = String(maybeUrl).trim();
+  if (!trimmed) return null;
+  const absolute = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `${SERVER_URL}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  try {
+    return encodeURI(absolute);
+  } catch {
+    return null;
+  }
+}
 
 type ProductDetailRouteProp = RouteProp<RootStackParamList, 'ProductDetail'>;
 
@@ -349,19 +362,17 @@ export default function ProductDetailScreen() {
       product.productImages.length > 0 &&
       product?.productPrice
     ) {
+      const firstImage = getImageUrl(product.productImages[0]);
       saveRecentItem({
         id: String(product.productId),
         name: product.productName,
-        imageUrl: getImageUrl(product.productImages[0]),
+        imageUrl: firstImage || '',
         price: product.productPrice,
       });
     }
   }, [product]);
 
-  const getImageUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return encodeURI(`${SERVER_URL}${url}`);
-  };
+  const getImageUrl = (url: string) => toImageUri(url);
 
   // 이미지 스크롤 인덱스 계산 (가로 스크롤)
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -431,14 +442,18 @@ export default function ProductDetailScreen() {
               scrollEventThrottle={16}
               ref={scrollViewRef}
             >
-              {product.productImages.map((imgUrl, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: getImageUrl(imgUrl) }}
-                  style={styles.productImage}
-                  resizeMode="cover"
-                />
-              ))}
+              {product.productImages.map((imgUrl, index) => {
+                const uri = getImageUrl(imgUrl);
+                if (!uri) return null;
+                return (
+                  <Image
+                    key={index}
+                    source={{ uri }}
+                    style={styles.productImage}
+                    resizeMode="cover"
+                  />
+                );
+              })}
             </ScrollView>
 
             {/* 도트 페이징 */}
@@ -520,14 +535,18 @@ export default function ProductDetailScreen() {
 
             {/* 상세 이미지 */}
             <View style={styles.imagesWrapper}>
-              {product.productImages.map((imgUrl, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: getImageUrl(imgUrl) }}
-                  style={styles.productImageGrid}
-                  resizeMode="cover"
-                />
-              ))}
+              {product.productImages.map((imgUrl, index) => {
+                const uri = getImageUrl(imgUrl);
+                if (!uri) return null;
+                return (
+                  <Image
+                    key={index}
+                    source={{ uri }}
+                    style={styles.productImageGrid}
+                    resizeMode="cover"
+                  />
+                );
+              })}
             </View>
           </View>
 
@@ -540,14 +559,26 @@ export default function ProductDetailScreen() {
                 <View key={idx} style={styles.itemMarginBottom}>
                   <View style={styles.reviewRow}>
                     <Image
-                      source={{ uri: `${SERVER_URL}${r.profileImageUrl}` }}
+                      source={
+                        toImageUri(r.profileImageUrl)
+                          ? { uri: toImageUri(r.profileImageUrl)! }
+                          : require('../assets/images/logo.png')
+                      }
                       style={styles.profileImage}
                     />
                     <StarRating rating={r.rating} />
                   </View>
                   <Text>{r.description}</Text>
                   <Text style={styles.reviewDate}>
-                    {new Date(r.createdAt).toLocaleDateString()}
+                    {new Date(r.createdAt)
+                      .toLocaleDateString('ko-KR', {
+                        year: '2-digit',
+                        month: '2-digit',
+                        day: '2-digit',
+                      })
+                      .replace(/\./g, '.')
+                      .replace(/\s/g, '')
+                      .replace(/\.$/, '')}
                   </Text>
                 </View>
               ))}
