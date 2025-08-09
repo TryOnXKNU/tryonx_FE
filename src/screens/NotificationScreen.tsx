@@ -19,6 +19,10 @@ const NotificationScreen = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
+    if (!token) {
+      Alert.alert('로그인이 필요합니다.', '로그인 후 이용해주세요.');
+      return;
+    }
     const fetchNotifications = async () => {
       try {
         const res = await axios.get(`${SERVER_URL}/api/v1/notice`, {
@@ -27,7 +31,6 @@ const NotificationScreen = () => {
           },
         });
 
-        // 최신 알림이 위로 오도록 정렬
         const sortedData = res.data.sort(
           (a: Notification, b: Notification) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

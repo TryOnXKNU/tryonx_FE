@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
+import { useAuthStore } from '../store/useAuthStore';
+import { useNavigation } from '@react-navigation/native';
 
 // type NavigationProp = StackNavigationProp<RootStackParamList, 'Fitting'>;
 
@@ -23,12 +25,35 @@ const sampleProducts = Array.from({ length: 12 }, (_, index) => ({
 
 export default function FittingScreen() {
   // const navigation = useNavigation();
+  const navigation = useNavigation();
+  const { isLoggedIn } = useAuthStore();
   const [selectedGender, setSelectedGender] = useState<'male' | 'female'>(
     'female',
   );
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedBodyType, setSelectedBodyType] = useState('Wave');
   const [modalVisible, setModalVisible] = useState(false);
+
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.safeArea}>
+        <Header title="AI피팅" showRightIcons={true} hideBackButton={true} />
+        <View style={styles.loginWrap}>
+          <Image
+            source={require('../assets/images/logo.png')}
+            style={styles.loginLogo}
+          />
+          <Text style={styles.loginGuide}>로그인 후에 사용 가능합니다.</Text>
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate('Login')}
+            style={styles.loginCta}
+          >
+            <Text style={styles.loginCtaText}>로그인</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.safeArea}>
@@ -326,4 +351,20 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#888',
   },
+  // login inline styles extracted
+  loginWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loginLogo: { width: 100, height: 100, marginBottom: 12 },
+  loginGuide: { fontSize: 16, color: '#666', marginBottom: 12 },
+  loginCta: {
+    backgroundColor: '#000',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  loginCtaText: { color: '#fff', fontWeight: '700' },
 });

@@ -54,6 +54,7 @@ export default function CartScreen() {
   const API_URL = 'http://localhost:8080/api/v1/cart';
 
   const fetchCart = useCallback(async () => {
+    if (!token) return;
     try {
       const response = await fetch(API_URL, {
         method: 'GET',
@@ -82,8 +83,15 @@ export default function CartScreen() {
   }, [token]);
 
   useEffect(() => {
+    if (!token) {
+      Alert.alert('로그인이 필요합니다.', '로그인 후 이용해주세요.', [
+        { text: '취소', style: 'cancel', onPress: () => navigation.goBack() },
+        { text: '로그인', onPress: () => navigation.navigate('Login') },
+      ]);
+      return;
+    }
     fetchCart(); // 장바구니 데이터 로드
-  }, [fetchCart]);
+  }, [fetchCart, navigation, token]);
 
   // 선택된 아이템 가격 합산 계산 useEffect 추가
   useEffect(() => {

@@ -48,8 +48,8 @@ function LoginScreen() {
       if (token && role) {
         try {
           setAuth(token, role as 'USER' | 'ADMIN'); // Zustand 스토어에 저장
-          Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
-          navigation.navigate('Main');
+          // 메인 스택의 루트로 즉시 진입
+          (navigation as any).reset({ index: 0, routes: [{ name: 'Main' }] });
         } catch (error) {
           console.error('토큰 처리 실패:', error);
           Alert.alert('로그인 실패', '토큰 처리 중 오류 발생');
@@ -73,6 +73,14 @@ function LoginScreen() {
     return match ? decodeURIComponent(match[1]) : null;
   };
 
+  const handleClose = () => {
+    if ((navigation as any).canGoBack && (navigation as any).canGoBack()) {
+      (navigation as any).goBack();
+    } else {
+      (navigation as any).navigate('Main');
+    }
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
@@ -90,10 +98,8 @@ function LoginScreen() {
       await AsyncStorage.setItem('authToken', token);
       await AsyncStorage.setItem('userRole', role);
       setAuth(token, role);
-
-      Alert.alert('로그인 성공', '메인 화면으로 이동합니다.');
-
-      // navigation.navigate('Main');
+      // 메인 스택 루트로 즉시 이동
+      (navigation as any).reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (error) {
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
     } finally {
@@ -110,7 +116,7 @@ function LoginScreen() {
         return;
       }
 
-      const profile = await getProfile();
+      await getProfile();
       const payload = { accessToken: token.accessToken };
 
       const res = await axios.post(
@@ -128,8 +134,8 @@ function LoginScreen() {
       await AsyncStorage.setItem('userRole', role ?? 'USER');
 
       setAuth(serverToken, role ?? 'USER');
-
-      Alert.alert('로그인 성공', `${profile.nickname}님 환영합니다!`);
+      // 메인 스택 루트로 즉시 이동
+      (navigation as any).reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (error) {
       console.error('카카오 로그인 실패:', error);
       Alert.alert('카카오 로그인 실패', '네트워크 또는 서버 오류');
@@ -141,6 +147,11 @@ function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+          <Icon name="close" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
           <Image
@@ -241,10 +252,6 @@ function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.nonLoginButton}>
-                <Text style={styles.nonLoginButtonText}>비회원 주문 조회</Text>
-              </TouchableOpacity>
-
               <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>또는</Text>
@@ -302,6 +309,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0A0A0A',
+  },
+  topBar: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+  },
+  closeBtn: {
+    padding: 6,
   },
   inner: {
     flex: 1,
@@ -377,22 +393,6 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  nonLoginButton: {
-    width: '100%',
-    height: 52,
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  nonLoginButtonText: {
-    color: '#E5E5E5',
     fontSize: 16,
     fontWeight: 'bold',
   },
