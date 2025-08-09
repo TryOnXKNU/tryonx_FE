@@ -25,7 +25,8 @@ type InquiryDetail = {
   answer: string;
   createdAt: string;
   answeredAt: string;
-  imageUrls: string[];
+  userImageUrls: string[];
+  productImageUrls: string[];
 };
 
 // 날짜를 "YY.MM.DD" 형식으로 변환하는 함수
@@ -88,7 +89,9 @@ export default function AdminAskDetailScreen() {
         {/* 상단 박스 */}
         <View style={styles.topSection}>
           <Image
-            source={{ uri: `${SERVER_URL}${detail.imageUrls[0] || ''}` }}
+            source={{
+              uri: `${SERVER_URL}${detail.productImageUrls?.[0] || ''}`,
+            }}
             style={styles.mainImage}
           />
           <View style={styles.topTextBox}>
@@ -108,9 +111,9 @@ export default function AdminAskDetailScreen() {
         <Text style={styles.sectionTitle}>문의 내용</Text>
         <Text style={styles.contentText}>{detail.content}</Text>
 
-        {detail.imageUrls.length > 0 && (
+        {(detail.userImageUrls?.length ?? 0) > 0 && (
           <FlatList
-            data={detail.imageUrls}
+            data={detail.userImageUrls}
             horizontal
             keyExtractor={(uri, idx) => `img-${idx}`}
             renderItem={({ item }) => (
@@ -119,7 +122,7 @@ export default function AdminAskDetailScreen() {
                 style={styles.subImage}
               />
             )}
-            contentContainerStyle={{ marginTop: 10 }}
+            contentContainerStyle={styles.subImageList}
           />
         )}
 
@@ -136,13 +139,22 @@ export default function AdminAskDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f7f7f7' },
   content: { padding: 16 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   topSection: {
     flexDirection: 'row',
     marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   mainImage: {
     width: 100,
@@ -165,20 +177,38 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  contentText: { fontSize: 14, color: '#444', lineHeight: 20 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#111',
+  },
+  contentText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 22,
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
 
   subImage: {
     width: 90,
     height: 90,
     marginRight: 8,
-    borderRadius: 6,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
   },
+  subImageList: { marginTop: 10 },
 
   answerDate: {
     marginTop: 8,
     fontSize: 12,
     color: '#888',
+    alignSelf: 'flex-end',
   },
 });

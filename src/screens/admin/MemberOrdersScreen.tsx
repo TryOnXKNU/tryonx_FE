@@ -74,8 +74,26 @@ export default function MemberOrdersScreen({ route }: Props) {
     const dd = String(date.getDate()).padStart(2, '0');
     const hh = String(date.getHours()).padStart(2, '0');
     const min = String(date.getMinutes()).padStart(2, '0');
-    return `${yy}${mm}${dd} ${hh}:${min}`;
+    return `${yy}.${mm}.${dd} ${hh}:${min}`;
   };
+
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING: '주문 완료',
+    PROCESSING: '발송 처리',
+    READY: '배송 준비',
+    SHIPPING: '배송중',
+    DELIVERED: '배송 완료',
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    PENDING: '#4b7bec',
+    PROCESSING: '#3867d6',
+    READY: '#f39c12',
+    SHIPPING: '#20bf6b',
+    DELIVERED: '#2ecc71',
+  };
+
+  const getStatusColor = (status: string) => STATUS_COLORS[status] || '#999';
 
   if (loading)
     return <ActivityIndicator style={styles.loadingIndicator} size="large" />;
@@ -120,45 +138,31 @@ export default function MemberOrdersScreen({ route }: Props) {
             )}
             <View style={styles.divider} />
 
-            {/* 테이블 헤더 */}
-            <View style={styles.tableHeader}>
-              <Text style={[styles.cell, styles.cellOrderId]}>
-                주문번호/일시
-              </Text>
-              <Text style={[styles.cell, styles.cellProduct]}>상품명</Text>
-              <Text style={[styles.cell, styles.cellPrice]}>금액</Text>
-              <Text style={[styles.cell, styles.cellStatus]}>상태</Text>
-            </View>
-            <View style={styles.headerDivider} />
+            <Text style={styles.sectionTitle}>주문 목록</Text>
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.tableRow}>
-            {/* 주문번호 + 주문일시 */}
-            <View style={[styles.cell, styles.cellOrderId]}>
-              <Text style={styles.orderId}>{item.orderId}</Text>
-              <Text style={styles.orderDate}>{formatDate(item.orderedAt)}</Text>
+          <View style={styles.orderCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.orderNum}>#{item.orderId}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor(item.orderStatus) },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {STATUS_LABELS[item.orderStatus] || item.orderStatus}
+                </Text>
+              </View>
             </View>
-
-            {/* 상품명 */}
-            <Text
-              style={[styles.cell, styles.cellProduct]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.productName}
-              {/* {`${item.productId} ${item.productName} (주문상품)`} */}
-            </Text>
-
-            {/* 금액 */}
-            <Text style={[styles.cell, styles.cellPrice]}>
-              {item.price.toLocaleString()}원
-            </Text>
-
-            {/* 상태 */}
-            <Text style={[styles.cell, styles.cellStatus]}>
-              {item.orderStatus}
-            </Text>
+            <Text style={styles.orderDate}>{formatDate(item.orderedAt)}</Text>
+            <View style={styles.rowBetween}>
+              <Text style={styles.productName} numberOfLines={1}>
+                {item.productName}
+              </Text>
+              <Text style={styles.price}>{item.price.toLocaleString()}원</Text>
+            </View>
           </View>
         )}
       />
@@ -208,62 +212,54 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+  memberIdSub: { color: '#666', marginTop: 2 },
   divider: {
     height: 1,
     backgroundColor: '#ddd',
     marginVertical: 16,
   },
-
-  // 테이블 관련 스타일
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#eee',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 4,
-  },
-  headerDivider: {
-    height: 1,
-    backgroundColor: '#ccc',
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
     marginBottom: 8,
   },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+  orderCard: {
     backgroundColor: '#fff',
-    borderRadius: 4,
-    marginBottom: 8,
-    elevation: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
-  cell: {
-    fontSize: 14,
-    color: '#333',
-    paddingHorizontal: 4,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  cellOrderId: {
-    flex: 3,
+  orderNum: { fontWeight: '800', fontSize: 14, color: '#111' },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9999,
   },
-  cellProduct: {
-    flex: 2,
-  },
-  cellPrice: {
-    flex: 2,
-    textAlign: 'center',
-  },
-  cellStatus: {
-    flex: 2,
-    textAlign: 'center',
-  },
-
-  orderId: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    color: '#333',
-  },
+  statusBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   orderDate: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
+    marginBottom: 8,
   },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productName: { fontSize: 14, color: '#333', flex: 1, paddingRight: 8 },
+  price: { fontSize: 14, color: '#111', fontWeight: '700' },
 });

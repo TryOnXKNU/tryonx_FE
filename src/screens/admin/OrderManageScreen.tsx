@@ -167,7 +167,7 @@ export default function OrderManageScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="주문 관리" showRightIcons={false} hideBackButton={false} />
+      <Header title="주문 관리" showRightIcons={false} hideBackButton={true} />
       <View style={styles.filterContainer}>
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
           <TouchableOpacity

@@ -139,7 +139,7 @@ export type ProductItemInfo = {
   length: string;
   shoulder: string;
   chest: string;
-  sleeve_length: string;
+  sleeveLength: string;
   waist: string;
   thigh: string;
   rise: string;
