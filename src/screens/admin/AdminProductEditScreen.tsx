@@ -4,11 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
   Image,
   ActivityIndicator,
   TextInput,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import axios from 'axios';
 import { useRoute } from '@react-navigation/native';
@@ -27,7 +28,8 @@ interface ProductItem {
   length: number;
   shoulder: number;
   chest: number;
-  sleeve_length: number;
+  sleeve_length?: number;
+  sleeveLength?: number;
   waist: number;
   thigh: number;
   rise: number;
@@ -61,12 +63,64 @@ export default function AdminProductEditScreen() {
   const SERVER_BASE_URL = 'http://localhost:8080';
 
   // 수정 가능하게 form 상태 분리
+  type BodyShape = 'STRAIGHT' | 'NATURAL' | 'WAVE' | 'NONE';
+  type ProductStatus = 'AVAILABLE' | 'SOLDOUT' | 'HIDDEN';
+  type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'FREE';
+
+  const BODY_SHAPE_OPTIONS: { label: string; value: BodyShape }[] = [
+    { label: 'Straight', value: 'STRAIGHT' },
+    { label: 'Natural', value: 'NATURAL' },
+    { label: 'Wave', value: 'WAVE' },
+    { label: 'None', value: 'NONE' },
+  ];
+
+  const STATUS_OPTIONS: { label: string; value: ProductStatus }[] = [
+    { label: '판매중', value: 'AVAILABLE' },
+    { label: '품절', value: 'SOLDOUT' },
+    { label: '숨김', value: 'HIDDEN' },
+  ];
+
+  const SIZES: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'FREE'];
+
+  const CATEGORY_OPTIONS = [
+    { label: 'Top', value: '1' },
+    { label: 'Bottom', value: '2' },
+    { label: 'Outwear', value: '3' },
+    { label: 'Dress', value: '4' },
+    { label: 'Acc', value: '5' },
+  ];
+
   const [form, setForm] = useState({
     productName: '',
     productPrice: '',
     categoryId: '',
     description: '',
+    discountRate: '',
+    bodyShape: 'STRAIGHT' as BodyShape,
   });
+
+  type EditableItem = {
+    size: Size;
+    stock: string;
+    status: ProductStatus;
+    length: string;
+    shoulder: string;
+    chest: string;
+    sleeveLength: string; // UI는 camelCase로 관리
+    waist: string;
+    thigh: string;
+    rise: string;
+    hem: string;
+    hip: string;
+  };
+
+  const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
+  const [bodyShapeOpen, setBodyShapeOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  // 선택 모달
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerType, setPickerType] = useState<'SIZE' | 'STATUS' | null>(null);
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const fetchProductDetail = useCallback(async () => {
     if (!token) return;
@@ -89,13 +143,40 @@ export default function AdminProductEditScreen() {
         })) || [];
       setImages(imagesWithId);
 
-      // form 초기값 설정
+      // form 초기값 설정 (productName/description은 비활성으로 표시만)
       setForm({
         productName: data.productName,
         productPrice: data.productPrice.toString(),
         categoryId: data.categoryId.toString(),
         description: data.description,
+        discountRate: '0',
+        bodyShape: 'STRAIGHT',
       });
+
+      // 사이즈별 편집 상태 초기화 (숫자를 문자열로 변환)
+      setEditableItems(
+        (data.productItems || []).map(item => {
+          const sleeveLen =
+            (item as any).sleeveLength ?? (item as any).sleeve_length;
+          return {
+            size: (item.size as Size) || 'FREE',
+            stock: String(item.stock ?? ''),
+            status: (item.status as ProductStatus) || 'AVAILABLE',
+            length: String(item.length ?? ''),
+            shoulder: String(item.shoulder ?? ''),
+            chest: String(item.chest ?? ''),
+            sleeveLength:
+              sleeveLen !== undefined && sleeveLen !== null
+                ? String(sleeveLen)
+                : '',
+            waist: String(item.waist ?? ''),
+            thigh: String(item.thigh ?? ''),
+            rise: String(item.rise ?? ''),
+            hem: String(item.hem ?? ''),
+            hip: String(item.hip ?? ''),
+          };
+        }),
+      );
     } catch (error) {
       console.error('상품 불러오기 실패:', error);
       Alert.alert('오류', '상품 정보를 불러오는데 실패했습니다.');
@@ -108,40 +189,87 @@ export default function AdminProductEditScreen() {
     fetchProductDetail();
   }, [fetchProductDetail]);
 
-  const deleteServerImage = async (imageUrl: string) => {
-    if (!token) return;
-    Alert.alert(
-      '이미지 삭제',
-      '이미지를 삭제하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await axios.delete(
-                `${SERVER_BASE_URL}/api/v1/admin/product/${productId}/image`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                  data: { imageUrl },
-                },
-              );
-              setImages(prev => prev.filter(img => img.url !== imageUrl));
-              Alert.alert('삭제 완료', '이미지가 삭제되었습니다.');
-            } catch (e) {
-              console.error('이미지 삭제 실패:', e);
-              Alert.alert('실패', '이미지 삭제에 실패했습니다.');
-            }
-          },
-        },
-      ],
-      { cancelable: true },
-    );
-  };
-
   const handleInputChange = (key: keyof typeof form, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleItemChange = (
+    index: number,
+    key: keyof EditableItem,
+    value: string | Size | ProductStatus,
+  ) => {
+    setEditableItems(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [key]: value } as EditableItem;
+      return next;
+    });
+  };
+
+  const openPicker = (type: 'SIZE' | 'STATUS', index: number) => {
+    setPickerType(type);
+    setPickerIndex(index);
+    setPickerVisible(true);
+  };
+
+  const closePicker = () => {
+    setPickerVisible(false);
+    setPickerType(null);
+    setPickerIndex(null);
+  };
+
+  const handleSave = async () => {
+    if (!token) {
+      Alert.alert('오류', '로그인 정보가 없습니다.');
+      return;
+    }
+
+    if (!product) return;
+
+    try {
+      setLoading(true);
+
+      // productItems 편집값을 API 스키마에 맞게 변환
+      const productItemInfoDtos = editableItems.map(item => ({
+        size: item.size,
+        stock: Number(item.stock || 0),
+        status: item.status,
+        length: Number(item.length || 0),
+        shoulder: Number(item.shoulder || 0),
+        chest: Number(item.chest || 0),
+        sleeveLength: Number(item.sleeveLength || 0),
+        waist: Number(item.waist || 0),
+        thigh: Number(item.thigh || 0),
+        rise: Number(item.rise || 0),
+        hem: Number(item.hem || 0),
+        hip: Number(item.hip || 0),
+      }));
+
+      const payload = {
+        productItemInfoDtos,
+        price: Number(form.productPrice || 0),
+        discountRate: Number(form.discountRate || 0),
+        categoryId: Number(form.categoryId || 0),
+        bodyShape: form.bodyShape,
+      };
+
+      await axios.patch(
+        `${SERVER_BASE_URL}/api/v1/admin/product/${productId}/detail`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      Alert.alert('성공', '상품 정보가 수정되었습니다.');
+    } catch (error) {
+      console.error('상품 수정 실패:', error);
+      Alert.alert('실패', '상품 정보 수정에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading || !product) {
@@ -158,10 +286,10 @@ export default function AdminProductEditScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.label}>상품명</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.readonly]}
           value={form.productName}
-          onChangeText={text => handleInputChange('productName', text)}
-          placeholder="상품명을 입력하세요"
+          editable={false}
+          placeholder="상품명"
         />
 
         <Text style={styles.label}>가격</Text>
@@ -173,31 +301,88 @@ export default function AdminProductEditScreen() {
           keyboardType="numeric"
         />
 
-        <Text style={styles.label}>카테고리 ID</Text>
+        <Text style={styles.label}>할인율</Text>
         <TextInput
           style={styles.input}
-          value={form.categoryId}
-          onChangeText={text => handleInputChange('categoryId', text)}
-          placeholder="카테고리 ID를 입력하세요"
+          value={form.discountRate}
+          onChangeText={text => handleInputChange('discountRate', text)}
+          placeholder="할인율을 입력하세요 (0~99)"
           keyboardType="numeric"
         />
 
+        <Text style={styles.label}>카테고리</Text>
+        <View style={styles.dropdownWrapper}>
+          <TouchableOpacity
+            style={styles.dropdownButton}
+            onPress={() => setCategoryOpen(prev => !prev)}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {CATEGORY_OPTIONS.find(opt => opt.value === form.categoryId)
+                ?.label || '카테고리 선택'}
+            </Text>
+          </TouchableOpacity>
+          {categoryOpen && (
+            <View style={styles.dropdownMenu}>
+              {CATEGORY_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    handleInputChange('categoryId', opt.value);
+                    setCategoryOpen(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.label}>바디 쉐입</Text>
+        <View style={styles.dropdownWrapper}>
+          <TouchableOpacity
+            style={styles.dropdownButton}
+            onPress={() => setBodyShapeOpen(prev => !prev)}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {
+                BODY_SHAPE_OPTIONS.find(opt => opt.value === form.bodyShape)
+                  ?.label
+              }
+            </Text>
+          </TouchableOpacity>
+          {bodyShapeOpen && (
+            <View style={styles.dropdownMenu}>
+              {BODY_SHAPE_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    handleInputChange('bodyShape', opt.value);
+                    setBodyShapeOpen(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
         <Text style={styles.label}>설명</Text>
         <TextInput
-          style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+          style={[styles.input, styles.textArea, styles.readonly]}
           value={form.description}
-          onChangeText={text => handleInputChange('description', text)}
-          placeholder="설명을 입력하세요"
+          editable={false}
+          placeholder="설명"
           multiline
         />
 
         <Text style={styles.label}>상품 이미지</Text>
         <View style={styles.imagePreview}>
           {images.map(img => (
-            <View
-              key={img.id}
-              style={{ position: 'relative', marginRight: 10 }}
-            >
+            <View key={img.id} style={styles.imageItemWrapper}>
               <Image
                 source={{
                   uri: img.url.startsWith('http')
@@ -206,34 +391,139 @@ export default function AdminProductEditScreen() {
                 }}
                 style={styles.image}
               />
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deleteServerImage(img.url)}
-              >
-                <Text style={styles.deleteButtonText}>삭제</Text>
-              </TouchableOpacity>
             </View>
           ))}
         </View>
 
-        <Text style={styles.label}>상품 사이즈 및 재고</Text>
-        {product.productItems.length === 0 && (
+        <Text style={styles.label}>상품 사이즈/재고/상태/실측</Text>
+        {editableItems.length === 0 && (
           <Text style={styles.value}>등록된 상품 아이템이 없습니다.</Text>
         )}
-        {product.productItems.map((item, idx) => (
-          <View key={idx} style={styles.productItemContainer}>
-            <Text style={styles.productItemText}>사이즈: {item.size}</Text>
-            <Text style={styles.productItemText}>재고: {item.stock}</Text>
-            <Text style={styles.productItemText}>상태: {item.status}</Text>
-            <Text style={styles.productItemText}>가로 길이: {item.length}</Text>
-            <Text style={styles.productItemText}>어깨: {item.shoulder}</Text>
-            <Text style={styles.productItemText}>가슴: {item.chest}</Text>
-            <Text style={styles.productItemText}>
-              소매 길이: {item.sleeve_length}
-            </Text>
-            {/* 필요한 다른 필드도 마찬가지로 출력 */}
+        {editableItems.map((item, idx) => (
+          <View key={`${item.size}-${idx}`} style={styles.productItemContainer}>
+            <View style={styles.rowBetween}>
+              <View style={[styles.flex1, styles.mr8]}>
+                <Text style={styles.smallLabel}>사이즈</Text>
+                <View style={styles.inlinePickerRow}>
+                  <Text style={styles.inlinePickerValue}>{item.size}</Text>
+                </View>
+              </View>
+              <View style={[styles.flex1, styles.ml8]}>
+                <Text style={styles.smallLabel}>상태</Text>
+                <View style={styles.inlinePickerRow}>
+                  <Text style={styles.inlinePickerValue}>
+                    {
+                      STATUS_OPTIONS.find(opt => opt.value === item.status)
+                        ?.label
+                    }
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.inlinePickerButton}
+                    onPress={() => openPicker('STATUS', idx)}
+                  >
+                    <Text style={styles.inlinePickerButtonText}>변경</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rowBetween}>
+              <View style={[styles.flex1, styles.mr8]}>
+                <Text style={styles.smallLabel}>재고</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  value={item.stock}
+                  onChangeText={text => handleItemChange(idx, 'stock', text)}
+                  placeholder="재고"
+                />
+              </View>
+              <View style={[styles.flex1, styles.ml8]} />
+            </View>
+
+            <View style={styles.measurementsGrid}>
+              {(
+                [
+                  ['length', '총장'],
+                  ['shoulder', '어깨'],
+                  ['chest', '가슴'],
+                  ['sleeveLength', '소매 길이'],
+                  ['waist', '허리'],
+                  ['thigh', '허벅지'],
+                  ['rise', '밑위'],
+                  ['hem', '밑단'],
+                  ['hip', '엉덩이'],
+                ] as const
+              ).map(([key, label]) => (
+                <View key={key} style={styles.measureItem}>
+                  <Text style={styles.smallLabel}>{label}</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={item[key].toString()}
+                    onChangeText={text => handleItemChange(idx, key, text)}
+                    placeholder={label}
+                  />
+                </View>
+              ))}
+            </View>
           </View>
         ))}
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>저장하기</Text>
+        </TouchableOpacity>
+
+        {/* 선택 모달 */}
+        <Modal
+          visible={pickerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closePicker}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalSheet}>
+              <Text style={styles.modalTitle}>
+                {pickerType === 'SIZE' ? '사이즈 선택' : '상태 선택'}
+              </Text>
+              {(pickerType === 'SIZE' ? SIZES : STATUS_OPTIONS).map(option => (
+                <TouchableOpacity
+                  key={
+                    pickerType === 'SIZE'
+                      ? (option as string)
+                      : (option as { value: string }).value
+                  }
+                  style={styles.modalOption}
+                  onPress={() => {
+                    if (pickerIndex === null) return;
+                    if (pickerType === 'SIZE') {
+                      handleItemChange(pickerIndex, 'size', option as Size);
+                    } else {
+                      handleItemChange(
+                        pickerIndex,
+                        'status',
+                        (option as { value: ProductStatus }).value,
+                      );
+                    }
+                    closePicker();
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>
+                    {pickerType === 'SIZE'
+                      ? (option as string)
+                      : (option as { label: string }).label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={closePicker}
+              >
+                <Text style={styles.modalCancelText}>취소</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </View>
   );
@@ -261,20 +551,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 5,
   },
+  readonly: {
+    backgroundColor: '#f5f5f5',
+    color: '#666',
+  },
   imagePreview: {
     flexDirection: 'row',
     marginTop: 10,
   },
   image: { width: 80, height: 80, borderRadius: 8 },
-  deleteButton: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: 'rgba(255,0,0,0.7)',
-    paddingHorizontal: 5,
-    borderRadius: 4,
-  },
-  deleteButtonText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+  imageItemWrapper: { position: 'relative', marginRight: 10 },
 
   productItemContainer: {
     marginTop: 10,
@@ -283,8 +569,103 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
   },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
   productItemText: {
     fontSize: 14,
     marginBottom: 2,
+  },
+  smallLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  textArea: { height: 100, textAlignVertical: 'top' as const },
+  flex1: { flex: 1 },
+  mr8: { marginRight: 8 },
+  ml8: { marginLeft: 8 },
+  inlinePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  inlinePickerValue: { fontSize: 16, color: '#333' },
+  inlinePickerButton: {
+    borderWidth: 1,
+    borderColor: '#333',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  inlinePickerButtonText: { color: '#333', fontWeight: '600' },
+  measurementsGrid: {
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  measureItem: {
+    width: '48%',
+  },
+  dropdownWrapper: { marginTop: 8 },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#999',
+    padding: 10,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+  },
+  dropdownButtonText: { fontSize: 16, color: '#333' },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#999',
+    borderRadius: 6,
+    marginTop: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  dropdownItem: { padding: 10 },
+  dropdownItemText: { fontSize: 16, color: '#333' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 24,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  modalOption: { paddingVertical: 12 },
+  modalOptionText: { fontSize: 16, color: '#333' },
+  modalCancel: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+  },
+  modalCancelText: { color: '#333', fontWeight: '600' },
+
+  saveButton: {
+    marginTop: 30,
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,27 @@ export default function AdminAnswerScreen({ route, navigation }: Props) {
   const { askId, title, content, imgUrl, productName, size } = route.params;
   const token = useAuthStore(state => state.token);
   const [answer, setAnswer] = useState('');
+  const [askImages, setAskImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    // askId를 가지고 해당 문의의 askImageUrls 가져오기
+    // (실제 API가 askId별 이미지 조회 지원하는지 확인 필요, 없으면 전체 /new에서 찾아야함)
+    // 여기선 전체 /new API 호출 후 해당 askId에 맞는 항목 찾아서 이미지 세팅하는 방식
+    const fetchAskImages = async () => {
+      try {
+        const res = await axios.get(`${SERVER_URL}/api/v1/admin/asks/new`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const currentAsk = res.data.find((ask: any) => ask.askId === askId);
+        if (currentAsk && currentAsk.askImageUrls) {
+          setAskImages(currentAsk.askImageUrls);
+        }
+      } catch (error) {
+        Alert.alert('오류', '문의 이미지 불러오기 실패');
+      }
+    };
+    fetchAskImages();
+  }, [askId, token]);
 
   const submitAnswer = async () => {
     if (!answer.trim()) {
@@ -64,6 +85,19 @@ export default function AdminAnswerScreen({ route, navigation }: Props) {
         </Text>
         <Text style={styles.contentText}>{content}</Text>
 
+        {/* 문의 이미지들 (askImageUrls) */}
+        {askImages.length > 0 && (
+          <ScrollView horizontal style={styles.askImagesContainer}>
+            {askImages.map((url, idx) => (
+              <Image
+                key={idx}
+                source={{ uri: `${SERVER_URL}${url}` }}
+                style={styles.askImage}
+              />
+            ))}
+          </ScrollView>
+        )}
+
         {/* 답변 입력 */}
         <TextInput
           placeholder="답변 내용을 입력하세요."
@@ -84,7 +118,17 @@ export default function AdminAnswerScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { padding: 16 },
-  image: { width: '100%', height: 200, borderRadius: 8, marginBottom: 16 },
+  askImagesContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  askImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  image: { width: 100, height: 100, borderRadius: 8, marginBottom: 16 },
   title: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: '#111' },
   product: { fontSize: 14, color: '#777', marginBottom: 12 },
   contentText: { fontSize: 16, color: '#333', marginBottom: 20 },

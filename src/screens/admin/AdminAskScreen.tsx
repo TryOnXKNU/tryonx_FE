@@ -25,7 +25,7 @@ const Tab = createMaterialTopTabNavigator();
 export default function AdminAskScreen() {
   return (
     <View style={styles.container}>
-      <Header title="문의 관리" showRightIcons={false} hideBackButton={false} />
+      <Header title="문의 관리" showRightIcons={false} hideBackButton={true} />
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: '#111827',
@@ -193,14 +193,27 @@ const styles = StyleSheet.create({
   itemBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
-  itemImage: { width: 60, height: 60, borderRadius: 8, marginRight: 12 },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+  },
   itemText: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '600' },
-  sub: { fontSize: 13, color: '#666' },
+  title: { fontSize: 16, fontWeight: '700', color: '#111' },
+  sub: { fontSize: 13, color: '#666', marginTop: 2 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: '#999', fontSize: 16 },
 });

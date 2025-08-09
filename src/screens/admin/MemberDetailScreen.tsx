@@ -98,7 +98,16 @@ export default function MemberDetailScreen({ route }: Props) {
           )}
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{member.name}</Text>
-            <Text style={styles.memberId}>{member.memberId}</Text>
+            <View style={styles.badgesRow}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>ID {member.memberId}</Text>
+              </View>
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>
+                  {getBodyTypeLabel(member.bodyType)}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -107,6 +116,7 @@ export default function MemberDetailScreen({ route }: Props) {
 
         {/* 상세 정보 */}
         <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>회원 정보</Text>
           <InfoRow label="닉네임" value={member.nickName} />
           <InfoRow label="전화번호" value={member.phoneNumber} />
           <InfoRow label="생년월일" value={member.birthday} />
@@ -133,7 +143,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f7f7f7',
   },
   container: {
     padding: 16,
@@ -152,8 +162,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 8,
-    elevation: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
   profileImage: {
     width: 80,
@@ -171,7 +186,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  memberId: { fontSize: 14, color: '#666', marginTop: 4 },
+  badgesRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  badge: {
+    backgroundColor: '#111',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  tag: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 9999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tagText: { color: '#333', fontSize: 12 },
 
   divider: {
     height: 1,
@@ -181,22 +210,36 @@ const styles = StyleSheet.create({
 
   infoSection: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    elevation: 1,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 6,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   infoLabel: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 15,
+    color: '#777',
   },
   infoValue: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    color: '#111',
+    fontWeight: '600',
     maxWidth: '60%',
     textAlign: 'right',
   },

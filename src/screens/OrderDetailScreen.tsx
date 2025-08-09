@@ -36,6 +36,13 @@ type MemberInfo = {
   availablePoint: number;
 };
 
+type OrderStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'READY'
+  | 'SHIPPING'
+  | 'DELIVERED';
+
 type OrderDetail = {
   orderId: number;
   orderNum: string;
@@ -43,7 +50,7 @@ type OrderDetail = {
   totalAmount: number;
   discountAmount: number;
   finalAmount: number;
-  status: string;
+  status: OrderStatus;
   usedPoints: number;
   items: OrderItem[];
   orderItemsCount: number;
@@ -94,7 +101,7 @@ export default function OrderDetailScreen({ route }: Props) {
     );
   }
 
-  const firstItem = order.items[0]; // 대표 상품
+  // 모든 주문 상품 출력
 
   function formatDate(dateString: string) {
     const date = new Date(dateString);
@@ -107,6 +114,36 @@ export default function OrderDetailScreen({ route }: Props) {
       .padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
   }
 
+  // 주문 상태 한글화 및 진행도 계산
+  const STATUS_LABELS: Record<OrderStatus, string> = {
+    PENDING: '주문 완료',
+    PROCESSING: '발송 처리',
+    READY: '배송 준비',
+    SHIPPING: '배송중',
+    DELIVERED: '배송 완료',
+  };
+
+  // 진행바 제거로 단계 인덱스는 사용하지 않습니다.
+
+  const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return '#4b7bec';
+      case 'PROCESSING':
+        return '#3867d6';
+      case 'READY':
+        return '#f39c12';
+      case 'SHIPPING':
+        return '#20bf6b';
+      case 'DELIVERED':
+        return '#2ecc71';
+      default:
+        return '#666';
+    }
+  };
+
+  // 진행바 제거에 따라 진행도 계산은 사용하지 않습니다.
+
   return (
     <View style={styles.container}>
       <Header title="주문 상세" showRightIcons={false} />
@@ -114,10 +151,28 @@ export default function OrderDetailScreen({ route }: Props) {
         style={styles.card}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 주문자 정보 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{formatDate(order.orderedAt)}</Text>
-          <Text style={styles.simpleInfo}>{order.orderNum}</Text>
+        {/* 상단: 주문 정보 + 상태 배지 + 진행바 */}
+        <View style={[styles.section, styles.noDivider]}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionTitle}>
+                {formatDate(order.orderedAt)}
+              </Text>
+              <Text style={styles.simpleInfo}>{order.orderNum}</Text>
+            </View>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(order.status) },
+              ]}
+            >
+              <Text style={styles.statusBadgeText}>
+                {STATUS_LABELS[order.status]}
+              </Text>
+            </View>
+          </View>
+
+          {/* 진행바 제거 */}
         </View>
 
         {/* 주문자 정보 */}
@@ -137,39 +192,44 @@ export default function OrderDetailScreen({ route }: Props) {
             주문 상품 {order.orderItemsCount}개
           </Text>
 
-          <Text style={styles.simpleInfo}>{order.status}</Text>
+          <Text style={styles.simpleInfo}>{STATUS_LABELS[order.status]}</Text>
 
-          <View style={styles.productRow}>
-            {/* 왼쪽 이미지 */}
-            <View style={styles.imageBox}>
-              {firstItem.imgUrl ? (
-                <Image
-                  source={{
-                    uri: firstItem.imgUrl.startsWith('http')
-                      ? firstItem.imgUrl
-                      : `${SERVER_URL}${firstItem.imgUrl}`,
-                  }}
-                  style={styles.image}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Text>이미지</Text>
-                </View>
-              )}
-            </View>
+          {order.items.map((item, index) => (
+            <View
+              key={`${item.productName}-${index}`}
+              style={[styles.productRow, styles.productCard]}
+            >
+              {/* 왼쪽 이미지 */}
+              <View style={styles.imageBox}>
+                {item.imgUrl ? (
+                  <Image
+                    source={{
+                      uri: item.imgUrl.startsWith('http')
+                        ? item.imgUrl
+                        : `${SERVER_URL}${item.imgUrl}`,
+                    }}
+                    style={styles.image}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Text>이미지</Text>
+                  </View>
+                )}
+              </View>
 
-            {/* 오른쪽 상품 정보 */}
-            <View style={styles.productInfo}>
-              <Text style={styles.productName}>{firstItem.productName}</Text>
-              <Text style={styles.productDetail}>
-                {firstItem.size} / {firstItem.quantity}개
-              </Text>
-              <Text style={styles.productPrice}>
-                {firstItem.price.toLocaleString()}원
-              </Text>
+              {/* 오른쪽 상품 정보 */}
+              <View style={styles.productInfo}>
+                <Text style={styles.productName}>{item.productName}</Text>
+                <Text style={styles.productDetail}>
+                  {item.size} / {item.quantity}개
+                </Text>
+                <Text style={styles.productPrice}>
+                  {item.price.toLocaleString()}원
+                </Text>
+              </View>
             </View>
-          </View>
+          ))}
         </View>
 
         {/* 결제 정보 */}
@@ -188,6 +248,11 @@ export default function OrderDetailScreen({ route }: Props) {
             <Text style={styles.text}>
               {order.discountAmount.toLocaleString()}원
             </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.text}>배송비</Text>
+            <Text style={styles.text}>무료배송</Text>
           </View>
 
           <View style={styles.row}>
@@ -240,6 +305,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
+  noDivider: {
+    borderBottomWidth: 1,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -259,6 +333,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 12,
+  },
+  productCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+    padding: 10,
   },
   imageBox: {
     width: 80,
@@ -296,6 +377,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    alignSelf: 'flex-start',
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // 진행바 제거로 관련 스타일 사용 안 함
 
   row: {
     flexDirection: 'row',

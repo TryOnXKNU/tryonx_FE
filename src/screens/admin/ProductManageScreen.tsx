@@ -157,10 +157,10 @@ export default function ProductManageScreen() {
     <View style={styles.container}>
       <Header title="상품 관리" showRightIcons={false} hideBackButton={true} />
 
-      <View style={styles.searchContainer}>
+      <View style={styles.toolbar}>
         <TextInput
           style={styles.searchInput}
-          placeholder="상품을 검색해보세요."
+          placeholder="상품명을 입력하세요"
           placeholderTextColor="#999"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -256,17 +256,21 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 20,
   },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    marginBottom: 10,
+  toolbar: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   searchInput: {
-    height: 45,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    fontSize: 16,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+    backgroundColor: '#fafafa',
     color: '#333',
   },
   listContainer: {

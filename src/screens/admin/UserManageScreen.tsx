@@ -28,12 +28,7 @@ type Member = {
   phone?: string;
 };
 
-const searchOptions = [
-  { key: 'name', label: '회원명' },
-  { key: 'memberId', label: '회원번호' },
-  // { key: 'email', label: '이메일' },
-  // { key: 'phone', label: '휴대번호' },
-];
+// 단일 검색창으로 회원명/회원번호 동시 검색
 
 const ProfileImage = ({ uri }: { uri: string }) => {
   if (uri) {
@@ -54,9 +49,6 @@ export default function UserManageScreen() {
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchKey, setSearchKey] = useState<
-    'name' | 'memberId' | 'email' | 'phone'
-  >('name');
   const [searchText, setSearchText] = useState('');
 
   const fetchMembers = useCallback(async () => {
@@ -81,9 +73,11 @@ export default function UserManageScreen() {
   }, [fetchMembers]);
 
   const filteredMembers = members.filter(member => {
-    if (!searchText) return true;
-    const value = String(member[searchKey] ?? '').toLowerCase();
-    return value.includes(searchText.toLowerCase());
+    if (!searchText.trim()) return true;
+    const text = searchText.trim().toLowerCase();
+    const nameMatch = (member.name || '').toLowerCase().includes(text);
+    const idMatch = String(member.memberId || '').includes(text);
+    return nameMatch || idMatch;
   });
 
   const handleDelete = (memberId: number) => {
@@ -154,38 +148,17 @@ export default function UserManageScreen() {
     </View>
   );
 
-  const currentSearchLabel =
-    searchOptions.find(o => o.key === searchKey)?.label || '검색';
+  // placeholder는 고정 문구 사용
 
   return (
     <View style={styles.container}>
       <Header title="회원 관리" showRightIcons={false} hideBackButton={true} />
 
-      <View style={styles.searchContainer}>
-        <View style={styles.pickerContainer}>
-          {searchOptions.map(option => (
-            <TouchableOpacity
-              key={option.key}
-              style={[
-                styles.searchOption,
-                searchKey === option.key && styles.searchOptionSelected,
-              ]}
-              onPress={() => setSearchKey(option.key as typeof searchKey)}
-            >
-              <Text
-                style={[
-                  styles.searchOptionText,
-                  searchKey === option.key && styles.searchOptionTextSelected,
-                ]}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* 상단 툴바: 통합 검색 (회원명/회원번호) */}
+      <View style={styles.toolbar}>
         <TextInput
           style={styles.searchInput}
-          placeholder={`${currentSearchLabel} 검색`}
+          placeholder="회원명 또는 회원번호를 입력하세요"
           value={searchText}
           onChangeText={setSearchText}
         />
@@ -212,42 +185,22 @@ export default function UserManageScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  toolbar: {
     backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  pickerContainer: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  searchOption: {
-    marginRight: 8,
-    marginBottom: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 15,
-    backgroundColor: '#ddd',
-  },
-  searchOptionSelected: {
-    backgroundColor: '#000',
-  },
-  searchOptionText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  searchOptionTextSelected: {
-    color: '#fff',
-  },
+  // 단일 검색창만 사용. 칩/필터 행 제거
   searchInput: {
-    height: 44,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 14,
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderColor: '#ccc',
-    fontSize: 15,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+    backgroundColor: '#fafafa',
   },
 
   memberItem: {
@@ -260,8 +213,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     minHeight: 88,
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 0.5,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
   profileImage: {
     width: 70,

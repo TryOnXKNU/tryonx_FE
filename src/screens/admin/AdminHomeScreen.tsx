@@ -17,6 +17,7 @@ export default function AdminHomeScreen() {
   const [askCount, setAskCount] = React.useState(0);
   const [newMemberCount, setNewMemberCount] = React.useState(0);
   const [totalMemberCount, setTotalMemberCount] = React.useState(0);
+  const [todaySalesAmount, setTodaySalesAmount] = React.useState(0);
 
   //  데이터 가져오기
   React.useEffect(() => {
@@ -40,13 +41,14 @@ export default function AdminHomeScreen() {
 
         const data = await response.json();
 
-        // ✅ API 데이터 상태에 반영
+        //  API 데이터 상태에 반영
         setExchangeCount(data.exchangeTotalCount);
         setReturnCount(data.returnTotalCount);
         setOrderCount(data.orderTotalCount);
         setAskCount(data.askTotalCount);
         setNewMemberCount(data.newMemberCount);
         setTotalMemberCount(data.totalMemberCount);
+        setTodaySalesAmount(data.todaySalesAmount);
       } catch (error) {
         console.error('Error fetching counts:', error);
       }
@@ -86,7 +88,9 @@ export default function AdminHomeScreen() {
         <View style={styles.salesCard}>
           <Text style={styles.salesTitle}>오늘 매출</Text>
           <Text style={styles.salesDate}>{today}</Text>
-          <Text style={styles.salesAmount}>₩ 1,250,000</Text>
+          <Text style={styles.salesAmount}>
+            ₩ {todaySalesAmount.toLocaleString()}
+          </Text>
         </View>
 
         {/* 회원 정보 */}
@@ -114,7 +118,11 @@ export default function AdminHomeScreen() {
         <View style={styles.statusSection}>
           <TouchableOpacity
             style={styles.statusRow}
-            onPress={() => navigation.navigate('OrderManage')}
+            onPress={() =>
+              (navigation as any).navigate('AdminTabs', {
+                screen: 'Orders',
+              })
+            }
           >
             <Text style={styles.statusLabel}>주문 접수</Text>
             <Text style={styles.statusValue}>{orderCount}건</Text>
@@ -138,7 +146,9 @@ export default function AdminHomeScreen() {
 
           <TouchableOpacity
             style={styles.statusRow}
-            onPress={() => navigation.navigate('AdminAsk')}
+            onPress={() =>
+              (navigation as any).navigate('AdminTabs', { screen: 'Inquiries' })
+            }
           >
             <Text style={styles.statusLabel}>문의 접수</Text>
             <Text style={styles.statusValue}>{askCount}건</Text>

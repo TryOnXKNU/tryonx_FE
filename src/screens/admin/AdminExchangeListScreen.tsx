@@ -299,45 +299,46 @@ export default function AdminExchangeListScreen({ navigation }: any) {
     <View style={styles.container}>
       <Header title="교환 접수" showRightIcons={false} showHomeButton={false} />
 
-      <View style={styles.statusFilterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {(
-            [
-              'ALL',
-              'REQUESTED',
-              'ACCEPTED',
-              'REJECTED',
-              'COLLECTING',
-              'COMPLETED',
-            ] as (ExchangeStatus | 'ALL')[]
-          ).map(status => (
-            <TouchableOpacity
-              key={status}
+      <View style={styles.filterContainer}>
+        {(
+          [
+            'ALL',
+            'REQUESTED',
+            'ACCEPTED',
+            'REJECTED',
+            'COLLECTING',
+            'COMPLETED',
+          ] as (ExchangeStatus | 'ALL')[]
+        ).map(status => (
+          <TouchableOpacity
+            key={status}
+            style={[
+              styles.filterChip,
+              selectedStatus === status && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedStatus(status)}
+          >
+            <Text
               style={[
-                styles.statusFilterButton,
-                selectedStatus === status && styles.statusFilterButtonActive,
+                styles.filterChipText,
+                selectedStatus === status && styles.filterChipTextActive,
               ]}
-              onPress={() => setSelectedStatus(status)}
             >
-              <Text
-                style={[
-                  styles.statusFilterText,
-                  selectedStatus === status && styles.statusFilterTextActive,
-                ]}
-              >
-                {statusLabels[status]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              {statusLabels[status]}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      <TextInput
-        placeholder="상품명, 교환 ID, 주문 ID, 주문아이템 ID를 검색하세요."
-        value={searchText}
-        onChangeText={setSearchText}
-        style={styles.searchInput}
-      />
+      {/* UserManageScreen 스타일의 검색 toolbar */}
+      <View style={styles.toolbar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="상품명/교환ID/주문ID/주문아이템ID 검색"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
 
       {loading ? (
         <ActivityIndicator
@@ -435,14 +436,13 @@ export default function AdminExchangeListScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
-  statusFilterContainer: {
+  filterContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    flexWrap: 'wrap',
+    padding: 10,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    backgroundColor: '#fafafa',
+    borderBottomColor: '#eee',
   },
   statusFilterButton: {
     paddingHorizontal: 14,
@@ -464,15 +464,34 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  searchInput: {
-    margin: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 8,
-    fontSize: 16,
+  // OrderManageScreen 스타일과 동일한 칩 (이름 충돌 방지 위해 filterChip 사용)
+  filterChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#eee',
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  filterChipActive: { backgroundColor: '#000' },
+  filterChipText: { color: '#333', fontSize: 14 },
+  filterChipTextActive: { color: '#fff', fontWeight: 'bold' },
+
+  toolbar: {
     backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchInput: {
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+    backgroundColor: '#fafafa',
   },
 
   activityIndicator: {
@@ -496,11 +515,13 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 8,
     backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
     shadowOffset: { width: 0, height: 2 },
   },
 

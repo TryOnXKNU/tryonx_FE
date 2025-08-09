@@ -318,13 +318,13 @@ export default function AdminReturnDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f7f7f7' },
   scrollContainer: { padding: 16, paddingBottom: 30 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   image: {
     width: '100%',
     height: 220,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: '#eee',
     marginBottom: 16,
   },
@@ -336,23 +336,29 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     marginBottom: 16,
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
-    color: '#d32f2f',
+    color: '#111',
   },
   infoText: { fontSize: 14, color: '#333', marginBottom: 4 },
   boldText: { fontWeight: '900' },
   whiteText: { color: '#fff' },
   updateButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#111',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 10,
   },
   updateButtonText: {

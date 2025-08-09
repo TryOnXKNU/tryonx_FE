@@ -20,7 +20,7 @@ import type { RootStackParamList } from '../navigation/types';
 type OrderItem = {
   orderItemId: number;
   productName: string;
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL';
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'FREE';
   quantity: number;
   price: number;
   imageUrl: string;
@@ -108,10 +108,6 @@ export default function MyOrderListScreen() {
     )}.${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  const handleReorder = (_orderId: string) => {
-    Alert.alert('재구매 기능은 준비 중입니다.');
-  };
-
   const handleReview = (orderItemId: number) => {
     navigation.navigate('ReviewWrite', { orderItemId });
   };
@@ -160,7 +156,7 @@ export default function MyOrderListScreen() {
           .map(order => {
             const firstItem = order.orderItem[0];
 
-            // 현재 상품에 대해 반품/교환 신청이 이미 됐는지 확인
+            // 첫 상품 기준으로 주문 단위 버튼 상태 계산(기존 동작 유지)
             const isReturnRequested = returnList.includes(
               firstItem.orderItemId,
             );
@@ -173,42 +169,31 @@ export default function MyOrderListScreen() {
                 <Text style={styles.date}>{formatDate(order.orderedAt)}</Text>
                 <Text style={styles.productName}>{order.orderNum}</Text>
 
-                <View style={styles.productRow}>
-                  <Image
-                    source={{ uri: getImageUri(firstItem.imageUrl) }}
-                    style={styles.productImg}
-                  />
+                {order.orderItem.map(item => (
+                  <View key={item.orderItemId} style={styles.productRow}>
+                    <Image
+                      source={{ uri: getImageUri(item.imageUrl) }}
+                      style={styles.productImg}
+                    />
 
-                  <View style={styles.productInfo}>
-                    <Text style={styles.productName}>
-                      {firstItem.productName}
-                    </Text>
-                    <Text style={styles.sizeQty}>
-                      사이즈 {firstItem.size} / {firstItem.quantity}개
-                      {order.orderItemsCount > 1
-                        ? ` 외 ${order.orderItemsCount - 1}개`
-                        : ''}
-                    </Text>
-                  </View>
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName}>{item.productName}</Text>
+                      <Text style={styles.sizeQty}>
+                        사이즈 {item.size} / {item.quantity}개
+                      </Text>
+                    </View>
 
-                  <View style={styles.productNameRow}>
-                    <TouchableOpacity
-                      style={styles.detailBtn}
-                      onPress={() => handleDetail(order.orderId.toString())}
-                    >
-                      <Text style={styles.detailText}>상세보기</Text>
-                    </TouchableOpacity>
+                    {/* per-item 상세보기 버튼 제거 (아래 공용 버튼으로 이동) */}
                   </View>
-                </View>
+                ))}
 
                 <View style={styles.actionButtonsRow}>
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.reorderBtn]}
-                    onPress={() => handleReorder(order.orderId.toString())}
+                    onPress={() => handleDetail(order.orderId.toString())}
                   >
-                    <Text style={styles.reorderBtnText}>재구매</Text>
+                    <Text style={styles.reorderBtnText}>상세보기</Text>
                   </TouchableOpacity>
-
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.reviewBtn]}
                     onPress={() => handleReview(firstItem.orderItemId)}

@@ -89,10 +89,14 @@ function InquiryListTab() {
         style={styles.productImage}
       />
       <View style={styles.flexOne}>
-        <Text style={styles.productName}>{item.productName}</Text>
+        <Text style={styles.productName} numberOfLines={1}>
+          {item.productName}
+        </Text>
         <Text style={styles.productSize}>{item.size}</Text>
       </View>
       <TouchableOpacity
+        style={styles.chevronButton}
+        activeOpacity={0.7}
         onPress={() =>
           navigation.navigate('AskForm', {
             orderItemId: item.orderItemId,
@@ -102,7 +106,7 @@ function InquiryListTab() {
           })
         }
       >
-        <Icon name="chevron-forward" size={20} color="#000" />
+        <Icon name="chevron-forward" size={18} color="#111827" />
       </TouchableOpacity>
     </View>
   );
@@ -253,11 +257,14 @@ function MyInquiriesTab() {
         <View style={styles.inquiryHeader}>
           <View style={[styles.inquiryHeader, styles.space]}>
             <View style={styles.delContainer}>
-              <Text style={styles.inquiryTitle}>{item.title}</Text>
+              <Text style={styles.inquiryTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
               <TouchableOpacity
                 onPress={() => deleteInquiry(item.askId)}
                 style={styles.delBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
               >
                 <Text style={styles.delText}>삭제</Text>
               </TouchableOpacity>
@@ -274,16 +281,16 @@ function MyInquiriesTab() {
           </View>
         </View>
         <View style={styles.dateStatusContainer}>
-          <Text
+          <View
             style={[
-              styles.inquiryStatusText,
-              isWaiting
-                ? styles.inquiryStatusWaiting
-                : styles.inquiryStatusAnswered,
+              styles.statusChip,
+              isWaiting ? styles.statusWaiting : styles.statusAnswered,
             ]}
           >
-            {isWaiting ? '답변 대기중' : '답변 완료'}
-          </Text>
+            <Text style={styles.statusChipText}>
+              {isWaiting ? '답변 대기중' : '답변 완료'}
+            </Text>
+          </View>
 
           <Text style={styles.inquiryDate}>
             {new Date(item.createdAt).toLocaleDateString('ko-KR')}
@@ -311,8 +318,7 @@ function MyInquiriesTab() {
                       <Image
                         key={idx}
                         source={{ uri: `${SERVER_URL}${imgUrl}` }}
-                        style={styles.inquiryImage}
-                        resizeMode="contain"
+                        style={styles.inquiryThumb}
                       />
                     ))}
                   </View>
@@ -369,23 +375,26 @@ const styles = StyleSheet.create({
   productItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
     backgroundColor: '#fff',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 20,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   productImage: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: '#eee',
+    backgroundColor: '#f3f4f6',
   },
   productName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 2,
@@ -393,6 +402,15 @@ const styles = StyleSheet.create({
   productSize: {
     fontSize: 13,
     color: '#6B7280',
+  },
+  chevronButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    marginLeft: 10,
   },
   inquireButtonText: {
     color: '#fff',
@@ -402,13 +420,16 @@ const styles = StyleSheet.create({
 
   // 문의내역 탭
   inquiryItem: {
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: '#ffffff',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    paddingHorizontal: 5,
-    paddingTop: 10,
-    paddingBottom: 20,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   inquiryHeader: {
     flexDirection: 'row',
@@ -425,34 +446,36 @@ const styles = StyleSheet.create({
   dateStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
-    marginBottom: 5,
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
-  inquiryStatusWaiting: {
-    marginTop: 4,
-    color: '#005c99ff',
-    marginRight: 8,
+  statusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  inquiryStatusAnswered: {
-    marginTop: 4,
-    color: '#000',
-    marginRight: 8,
+  statusWaiting: {
+    backgroundColor: '#EFF6FF',
+  },
+  statusAnswered: {
+    backgroundColor: '#ECFDF5',
+  },
+  statusChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#111827',
   },
   inquiryDate: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#9CA3AF',
   },
-  inquiryStatusText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
   inquiryDetail: {
-    marginTop: 10,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    backgroundColor: '#f2f2f2ff',
-    borderTopColor: '#ccc',
-    borderTopWidth: 1,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   detailText: {
     fontSize: 14,
@@ -487,8 +510,8 @@ const styles = StyleSheet.create({
   delBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#000',
-    borderRadius: 5,
+    backgroundColor: '#111827',
+    borderRadius: 6,
     marginLeft: 10,
   },
   //없을 때
@@ -498,17 +521,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   //문의 상세 이미지
-  inquiryImage: {
-    width: '100%',
-    height: 200,
-    marginVertical: 8,
+  inquiryThumb: {
+    width: 96,
+    height: 96,
     borderRadius: 8,
-    backgroundColor: '#eee',
+    marginRight: 10,
+    marginBottom: 10,
+    backgroundColor: '#f3f4f6',
   },
   imageContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginVertical: 8,
+    marginTop: 8,
   },
 });
