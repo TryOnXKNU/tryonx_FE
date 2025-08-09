@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 //import SplashScreen from '../screens/SplashScreen';
-import AuthStack from './AuthStack';
+//
 import MainStack from './MainStack';
 import AdminStack from './AdminStack';
 
@@ -21,10 +21,11 @@ export default function AppNavigator() {
 
   // if (loading) return <SplashScreen />;
 
-  if (!isLoggedIn) return <AuthStack />;
+  // 관리자일 때만 관리자 스택
+  if (isLoggedIn && role === 'ADMIN') return <AdminStack />;
 
-  // 로그인됨 → role로 분기
-  if (role === 'ADMIN') return <AdminStack />;
+  // 기본: 메인 스택 사용 (비로그인도 사용 가능)
+  // 로그인/회원가입 화면은 메인 스택 내에서 진입하도록 버튼/가드에서 유도
   return <MainStack />;
 
   // const { isLoggedIn, loadToken } = useAuthStore();

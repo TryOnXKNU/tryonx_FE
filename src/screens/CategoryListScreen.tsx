@@ -65,26 +65,46 @@ export default function CategoryListScreen() {
   // 상태 추가
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const SERVER_URL = 'http://localhost:8080';
 
   useFocusEffect(
     React.useCallback(() => {
-      if (!token) return;
-
       const fetchProducts = async () => {
         setLoading(true);
+        setAuthRequired(false);
         try {
-          const response = await axios.get<Product[]>(
-            `${SERVER_URL}/api/v1/products`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000,
-            },
-          );
-          setProducts(response.data);
-        } catch (error) {
-          console.error('Fetch error:', error);
+          if (token) {
+            const response = await axios.get<Product[]>(
+              `${SERVER_URL}/api/v1/products`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 10000,
+              },
+            );
+            setProducts(response.data);
+          } else {
+            // 비로그인: 공개 호출 시도
+            try {
+              const response = await axios.get<Product[]>(
+                `${SERVER_URL}/api/v1/products`,
+                { timeout: 10000 },
+              );
+              setProducts(response.data);
+            } catch (publicErr: any) {
+              if (
+                publicErr?.response?.status === 401 ||
+                publicErr?.response?.status === 403
+              ) {
+                setAuthRequired(true);
+                setProducts([]);
+              } else {
+                console.error('상품 불러오기 실패:', publicErr);
+                setProducts([]);
+              }
+            }
+          }
         } finally {
           setLoading(false);
         }
@@ -265,7 +285,23 @@ export default function CategoryListScreen() {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          loading ? <Text>Loading...</Text> : <Text>상품이 없습니다.</Text>
+          loading ? (
+            <Text>Loading...</Text>
+          ) : authRequired ? (
+            <View style={styles.emptyLoginWrap}>
+              <Text style={styles.emptyLoginText}>
+                로그인 후에 상품을 조회할 수 있습니다.
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Login')}
+                style={styles.loginBtn}
+              >
+                <Text style={styles.loginBtnText}>로그인</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text>상품이 없습니다.</Text>
+          )
         }
       />
     </View>
@@ -397,4 +433,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#e74c3c',
   },
+  emptyLoginWrap: { alignItems: 'center', marginTop: 32 },
+  emptyLoginText: { color: '#666', marginBottom: 12 },
+  loginBtn: {
+    backgroundColor: '#000',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  loginBtnText: { color: '#fff', fontWeight: '700' },
 });

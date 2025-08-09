@@ -38,6 +38,8 @@ import MyReviewListScreen from '../screens/MyReviewListScreen';
 import RecentItemScreen from '../screens/RecentItemScreen';
 
 import CartScreen from '../screens/CartScreen';
+import LoginScreen from '../screens/LoginScreen';
+import SignUpScreen from '../screens/SignUpScreen';
 
 import ExchangeRequestScreen from '../screens/ExchangeRequestScreen';
 import ExchangeListScreen from '../screens/ExchangeListScreen';
@@ -88,6 +90,9 @@ export default function MainStack() {
       <Stack.Screen name="ReturnList" component={ReturnListScreen} />
       <Stack.Screen name="ReturnDetail" component={ReturnDetailScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
+      {/* 비로그인 접근 유도용 */}
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
     </Stack.Navigator>
   );
 }

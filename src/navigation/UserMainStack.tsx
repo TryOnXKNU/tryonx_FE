@@ -3,9 +3,13 @@ import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
 import FittingScreen from '../screens/FittingScreen';
 import WishlistScreen from '../screens/WishlistScreen';
+import { useAuthStore } from '../store/useAuthStore';
+// removed unused imports
 import MyPageScreen from '../screens/MyPageScreen';
 
 export default function MainStack() {
+  useAuthStore();
+
   return (
     <MainTabNavigator
       tabs={[

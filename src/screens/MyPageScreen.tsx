@@ -83,16 +83,7 @@ export default function MyPageScreen() {
   };
 
   useEffect(() => {
-    if (!token) {
-      // 토큰 없으면 로그인 화면으로 강제 이동
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-      return;
-    }
-
-    if (!isFocused) return;
+    if (!token || !isFocused) return;
 
     const fetchUserInfo = async () => {
       try {
@@ -154,6 +145,33 @@ export default function MyPageScreen() {
     fetchOrderCount();
     fetchReviewCount();
   }, [token, navigation, isFocused]);
+
+  // 비로그인 뷰: 로그인 하러가기 버튼
+  if (!token) {
+    return (
+      <View style={styles.safeArea}>
+        <Header
+          title="마이페이지"
+          showRightIcons={true}
+          hideBackButton={true}
+        />
+        <View style={[styles.container, styles.centerAlign]}>
+          <Image
+            source={require('../assets/images/logo.png')}
+            style={styles.loginLogo}
+            resizeMode="contain"
+          />
+          <Text style={styles.loginGuide}>로그인이 필요합니다.</Text>
+          <TouchableOpacity
+            style={styles.loginCta}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.loginCtaText}>로그인 하러가기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.safeArea}>
@@ -313,6 +331,16 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
+  centerAlign: { alignItems: 'center' },
+  loginLogo: { width: 100, height: 100, marginTop: 40, marginBottom: 16 },
+  loginGuide: { fontSize: 16, color: '#666', marginBottom: 16 },
+  loginCta: {
+    backgroundColor: '#000',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  loginCtaText: { color: '#fff', fontWeight: '700' },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
